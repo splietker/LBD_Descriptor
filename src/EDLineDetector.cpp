@@ -42,7 +42,7 @@ the use of this software, even if advised of the possibility of such damage.
 */
 
 
-#include "EDLineDetector.hh"
+#include "lbd_descriptor/EDLineDetector.hh"
 
 #define Horizontal  255//if |dx|<|dy|;
 #define Vertical    0//if |dy|<=|dx|;
@@ -213,8 +213,10 @@ int EDLineDetector::EdgeDrawing(cv::Mat &image, EdgeChains &edgeChains, bool smo
 	cv::compare(dxABS_m, dyABS_m, dirImg_, cv::CMP_LT);
 
 	t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+#ifdef DEBUG_OUTPUT
 	std::cout<<"FOR ABS: "<<t<<"s"<<std::endl;
-	
+#endif // #ifdef DEBUG_OUTPUT
+
 	short *pdxImg = dxImg_.ptr<short>();
 	short *pdyImg = dyImg_.ptr<short>();
 	short *pgImg  = gImg_.ptr<short>();
@@ -248,7 +250,7 @@ int EDLineDetector::EdgeDrawing(cv::Mat &image, EdgeChains &edgeChains, bool smo
 		}
 	}
 	if(anchorsSize>edgePixelArraySize){
-		cout<<"anchor size is larger than its maximal size. anchorsSize="<<anchorsSize
+		cerr<<"anchor size is larger than its maximal size. anchorsSize="<<anchorsSize
 		<<", maximal size = "<<edgePixelArraySize <<endl;
 		return -1;
 	}
@@ -733,12 +735,12 @@ int EDLineDetector::EdgeDrawing(cv::Mat &image, EdgeChains &edgeChains, bool smo
 	pFirstPartEdgeS_[offsetPS]  = offsetPFirst;
 	pSecondPartEdgeS_[offsetPS] = offsetPSecond;
 	if(offsetPS>maxNumOfEdge){
-		cout<<"Edge drawing Error: The total number of edges is larger than MaxNumOfEdge, "
+		cerr<<"Edge drawing Error: The total number of edges is larger than MaxNumOfEdge, "
 		"numofedge = "<<offsetPS<<", MaxNumOfEdge="<<maxNumOfEdge<<endl;
 		return -1;
 	}
 	if(offsetPFirst>edgePixelArraySize||offsetPSecond>edgePixelArraySize){
-		cout<<"Edge drawing Error: The total number of edge pixels is larger than MaxNumOfEdgePixels, "
+		cerr<<"Edge drawing Error: The total number of edge pixels is larger than MaxNumOfEdgePixels, "
 		"numofedgePixel1 = "<<offsetPFirst<<",  numofedgePixel2 = "<<offsetPSecond <<
 		", MaxNumOfEdgePixel="<<edgePixelArraySize<<endl;
 		return -1;
@@ -1120,13 +1122,13 @@ double EDLineDetector::LeastSquaresLineFit_(  unsigned int *xCors,   unsigned in
 	int length = offsetE - offsetS;
 	int newLength = offsetE - newOffsetS;
 	if(length<=0||newLength<=0){
-		cout<<"EDLineDetector::LeastSquaresLineFit_ Error:"
+		cerr<<"EDLineDetector::LeastSquaresLineFit_ Error:"
 		" the expected line index is wrong...offsetE = "
 		<<offsetE<<", offsetS="<<offsetS<<", newOffsetS="<<newOffsetS<<endl;
 		return -1;
 	}
 	if(lineEquation.size()!=2){
-	    std::cout<<"SHOULD NOT BE != 2"<<std::endl;
+	    std::cerr<<"SHOULD NOT BE != 2"<<std::endl;
 	    CV_Assert(false);
 	}
 	cv::Mat_<float>  matT(2,newLength);

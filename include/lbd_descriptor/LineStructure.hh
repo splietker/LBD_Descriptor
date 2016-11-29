@@ -45,6 +45,8 @@ the use of this software, even if advised of the possibility of such damage.
 #define LINESTRUCTURE_HH_
 
 #include <vector>
+
+
 // A 2D line (normal equation parameters).
 struct SingleLine
 {

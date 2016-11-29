@@ -9,38 +9,35 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-FIND_PACKAGE(ARPACKPP)
-if (ARPACKPP_FOUND)
-  INCLUDE_DIRECTORIES(${ARPACKPP_INCLUDE_DIRS})
-else (ARPACKPP_FOUND)
-  message(FATAL_ERROR, "Could not find ARPACKPP")
-endif (ARPACKPP_FOUND)
+FIND_PACKAGE(ARPACKPP REQUIRED)
+INCLUDE_DIRECTORIES(${ARPACKPP_INCLUDE_DIRS})
 
-FIND_PACKAGE(OpenCV)
-if (OpenCV_FOUND)
-  include_directories(${OpenCV_INCLUDE_DIRS})
-else (OpenCV_FOUND)
-  message(FATAL_ERROR, "Could not find OpenCV")
-endif (OpenCV_FOUND)
+FIND_PACKAGE(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+include_directories(include)
 
 # source files of library "LineMatchingLib" to be created
 SET(LineMatchingLib_SRCS
-    PairwiseLineMatching.cpp
-    LineDescriptor.cpp
-    EDLineDetector.cpp
+    src/PairwiseLineMatching.cpp
+    src/LineDescriptor.cpp
+    src/EDLineDetector.cpp
     )
 # header files to be installed
 SET(LineMatchingLib_HEADER
-    PairwiseLineMatching.hh
-    LineDescriptor.hh
-    EDLineDetector.hh
-    LineStructure.hh
+    include/lbd_descriptor/PairwiseLineMatching.hh
+    include/lbd_descriptor/LineDescriptor.hh
+    include/lbd_descriptor/EDLineDetector.hh
+    include/lbd_descriptor/LineStructure.hh
     )
 
-ADD_LIBRARY(LineMatchingLib
+ADD_LIBRARY(lbddescriptor
     ${LineMatchingLib_SRCS}
     ${LineMatchingLib_HEADER})
-TARGET_LINK_LIBRARIES(LineMatchingLib ${ARPACKPP_LIBRARIES} ${OpenCV_LIBS})
+TARGET_LINK_LIBRARIES(lbddescriptor ${ARPACKPP_LIBRARIES} ${OpenCV_LIBS})
 
-ADD_EXECUTABLE(TestLineMatchingAlgorithm TestLineMatchingAlgorithm.cpp)
-TARGET_LINK_LIBRARIES(TestLineMatchingAlgorithm LineMatchingLib)
+ADD_EXECUTABLE(TestLineMatchingAlgorithm src/TestLineMatchingAlgorithm.cpp)
+TARGET_LINK_LIBRARIES(TestLineMatchingAlgorithm lbddescriptor)
+
+install(TARGETS lbddescriptor LIBRARY DESTINATION lib)
+install(DIRECTORY include/lbd_descriptor DESTINATION include)

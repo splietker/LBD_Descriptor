@@ -43,18 +43,20 @@ the use of this software, even if advised of the possibility of such damage.
 
 #ifndef PAIRWISELINEMATCHING_HH_
 #define PAIRWISELINEMATCHING_HH_
+
 #include <map>
+
 #include "LineDescriptor.hh"
 
 
 //each node in the graph is a possible line matching pair in the left and right image
-struct Node{
+struct LBDNode{
 	unsigned int leftLineID;//the index of line in the left image
 	unsigned int rightLineID;//the index of line in the right image
 };
 
 // Specifies a vector of nodes.
-typedef std::vector<Node> Nodes_list;
+typedef std::vector<LBDNode> Nodes_list;
 
 struct CompareL {
     bool operator() (const double& lhs, const double& rhs) const

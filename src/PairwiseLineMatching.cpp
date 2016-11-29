@@ -41,9 +41,10 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
+#include "lbd_descriptor/PairwiseLineMatching.hh"
+
 #include <vector>
 
-#include "PairwiseLineMatching.hh"
 #include <arlsmat.h>
 #include <arlssym.h>
 #include <opencv2/opencv.hpp>
@@ -201,7 +202,9 @@ double PairwiseLineMatching::GlobalRotationOfImagePair_(ScaleLines &linesInLeft,
     rotationAngle = rotationAngle * M_PI / 180;
   }
 
+#ifdef DEBUG_OUTPUT
   cout << "minimal histgram distance = " << minDif << ", Approximate global rotation angle = " << rotationAngle << endl;
+#endif // #ifdef DEBUG_OUTPUT
   return rotationAngle;
 }
 
@@ -298,7 +301,7 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
           continue; //the angle difference is too large;
         }
 
-        Node node; //line i in left image and line j in right image pass the test, (i,j) is a possible matched line pair.
+        LBDNode node; //line i in left image and line j in right image pass the test, (i,j) is a possible matched line pair.
         node.leftLineID = i;
         node.rightLineID = j;
         nodesList_.push_back(node);
@@ -311,14 +314,16 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
         {
           continue; //the length difference is too large;
         }
-        Node node; //line i in left image and line j in right image pass the test, (i,j) is a possible matched line pair.
+        LBDNode node; //line i in left image and line j in right image pass the test, (i,j) is a possible matched line pair.
         node.leftLineID = i;
         node.rightLineID = j;
         nodesList_.push_back(node);
       }
     } //end inner loop
   }
+#ifdef DEBUG_OUTPUT
   cout << "the number of possible matched line pair = " << nodesList_.size() << endl;
+#endif // #ifdef DEBUG_OUTPUT
 //	desDisMat.Save("DescriptorDis.txt");
 
   /*Second step, build the adjacency matrix which reflect the geometric constraints between nodes.
@@ -628,18 +633,15 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
 
   /* Third step, solve the principal eigenvector of the adjacency matrix using Arpack lib.
    */
-  /*
-  Mat in;
-  Mat eigenValues, eigenVectors;
-  cv::eigen(in, eigenValues, eigenVectors);
-   */
 
   ARluSymMatrix<double> arMatrix(dim, nnz, adjacenceMat, irow, pcol);
   // Defining what we need: the first eigenvector of arMatrix with largest magnitude.
   ARluSymStdEig<double> dprob(2, arMatrix, "LM");
   // Finding eigenvalues and eigenvectors.
   dprob.FindEigenvectors();
+#ifdef DEBUG_OUTPUT
   cout << "Number of 'converged' eigenvalues  : " << dprob.ConvergedEigenvalues() << endl;
+#endif // #ifdef DEBUG_OUTPUT
 
 #ifdef DEBUG_OUTPUT
   cout << "eigenvalue is = " << dprob.Eigenvalue(0) << ", and " << dprob.Eigenvalue(1) << endl;
@@ -777,6 +779,8 @@ void PairwiseLineMatching::MatchingResultFromPrincipalEigenvector_(ScaleLines &l
     }
   } // end while(stillLoop)
   matchResult = matchRet1;
+#ifdef DEBUG_OUTPUT
   cout << "matchRet1.size" << matchRet1.size() << ", minOfEigenVec_= " << minOfEigenVec_ << endl;
+#endif // #ifdef DEBUG_OUTPUT
 }
 

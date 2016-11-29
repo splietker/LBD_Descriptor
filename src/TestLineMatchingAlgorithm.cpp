@@ -49,8 +49,8 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc/imgproc_c.h>
 
-#include "LineDescriptor.hh"
-#include "PairwiseLineMatching.hh"
+#include "lbd_descriptor/LineDescriptor.hh"
+#include "lbd_descriptor/PairwiseLineMatching.hh"
 
 using namespace cv;
 using namespace std;

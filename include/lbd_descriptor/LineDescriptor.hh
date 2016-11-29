@@ -44,12 +44,12 @@ the use of this software, even if advised of the possibility of such damage.
 #ifndef LINEDESCRIPTOR_HH_
 #define LINEDESCRIPTOR_HH_
 
+#include <map>
 
 #include "EDLineDetector.hh"
 #include "LineStructure.hh"
 
 
-#include <map>
 struct OctaveLine{
   unsigned int octaveCount;//the octave which this line is detected
   unsigned int lineIDInOctave;//the line ID in that octave image

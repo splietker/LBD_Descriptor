@@ -41,7 +41,7 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
-#include "LineDescriptor.hh"
+#include "lbd_descriptor/LineDescriptor.hh"
 
 #define SalienceScale 0.9//0.9
 
@@ -632,12 +632,14 @@ int LineDescriptor::GetLineDescriptor(cv::Mat & image, ScaleLines & keyLines)
 {
     double t = (double)cv::getTickCount();
     if(!OctaveKeyLines(image,keyLines)){
-        cout<<"OctaveKeyLines failed"<<endl;
+        cerr<<"OctaveKeyLines failed"<<endl;
         return -1;
     }
     t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+#ifdef DEBUG_OUTPUT
     std::cout<<"time line extraction: "<<t<<"s"<<std::endl;
-    
+#endif // #ifdef DEBUG_OUTPUT
+
 //    t = (double)cv::getTickCount();
 //    ComputeLBD_(keyLines);
 //    t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();

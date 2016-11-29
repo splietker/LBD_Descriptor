@@ -8,8 +8,7 @@ To extract edge and lines, this library implements the EDLines Algorithm and the
 http://www.sciencedirect.com/science/article/pii/S0167865511001772
 http://www.sciencedirect.com/science/article/pii/S1047320312000831
 
-All original dependencies except Opencv have been removed and the code has been optimized for Opencv 2.4.x
-PairWiseLineMatching has not been touched and it still needs original dependencies, because the aim of this porting was to match descriptors with Opencv matchers.
+All Dependencies to the BIAS library have been removed and the code was tested with OpenCV3. PairWiseLineMatching still depends on ARPACKPP for the computation of eigenvalues and eigenvectors.
 
 During the 2014 GSoC a binarized version of these descriptors with a dedicated matcher implementation has been included into opencv_contrib:
 
