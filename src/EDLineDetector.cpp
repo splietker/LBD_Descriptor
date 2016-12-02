@@ -1005,7 +1005,10 @@ int EDLineDetector::EDline(cv::Mat &image, LineChains &lines, bool smoothed)
 			//Extract line segments from the remaining pixel; Current chain has been shortened already.
 		}
 	}//end for(unsigned int edgeID=0; edgeID<edges.numOfEdges; edgeID++)
-	pLineSID[numOfLines] = offsetInLineArray;
+  if (numOfLines > 0)
+	{
+		pLineSID[numOfLines] = offsetInLineArray;
+	}
 	lines.numOfLines = numOfLines;
 #ifdef DEBUGEDLine
 //	/*Show the extracted lines in color. Each line is in different color.*/

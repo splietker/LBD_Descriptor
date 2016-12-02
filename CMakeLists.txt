@@ -4,8 +4,8 @@ PROJECT(LBDDescriptor)
 
 SET(BUILD_SHARED_LIBS ON)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")# -Wall -Wextra -Wpedantic")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++11")# -Wall -Wextra -Wpedantic")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
@@ -34,7 +34,10 @@ SET(LineMatchingLib_HEADER
 ADD_LIBRARY(lbddescriptor
     ${LineMatchingLib_SRCS}
     ${LineMatchingLib_HEADER})
-TARGET_LINK_LIBRARIES(lbddescriptor ${ARPACKPP_LIBRARIES} ${OpenCV_LIBS})
+TARGET_LINK_LIBRARIES(lbddescriptor
+    ${ARPACKPP_LIBRARIES}
+    opencv_core opencv_imgproc opencv_ximgproc
+    )
 
 ADD_EXECUTABLE(TestLineMatchingAlgorithm src/TestLineMatchingAlgorithm.cpp)
 TARGET_LINK_LIBRARIES(TestLineMatchingAlgorithm lbddescriptor)

@@ -50,78 +50,140 @@ the use of this software, even if advised of the possibility of such damage.
 #include "LineStructure.hh"
 
 
-struct OctaveLine{
-  unsigned int octaveCount;//the octave which this line is detected
-  unsigned int lineIDInOctave;//the line ID in that octave image
-  unsigned int lineIDInScaleLineVec;//the line ID in Scale line vector
-  float lineLength; //the length of line in original image scale
+struct OctaveLine
+{
+  /**
+   * The octave which this line is detected.
+   */
+  unsigned int octaveCount;
+
+  /**
+   * The line ID in that octave image.
+   */
+  unsigned int lineIDInOctave;
+
+  /**
+   * The line ID in Scale line vector.
+   */
+  unsigned int lineIDInScaleLineVec;
+
+  /**
+   * The length of line in original image scale.
+   */
+  float lineLength;
 };
 
 
-/* This class is used to generate the line descriptors from multi-scale images  */
+/**
+ * This class is used to generate the line descriptors from multi-scale images
+ */
 class LineDescriptor
 {
 public:
-	LineDescriptor();
-	LineDescriptor(unsigned int numOfBand, unsigned int widthOfBand);
-	~LineDescriptor();
-	enum{
-		NearestNeighbor=0, //the nearest neighbor is taken as matching
-		NNDR=1//nearest/next ratio
-	};
+  LineDescriptor();
+
+  LineDescriptor(unsigned int numOfBand, unsigned int widthOfBand);
+
+  ~LineDescriptor();
+
+  enum
+  {
+    NearestNeighbor = 0, //the nearest neighbor is taken as matching
+    NNDR = 1//nearest/next ratio
+  };
+
   /*This function is used to detect lines from multi-scale images.*/
-	int OctaveKeyLines(cv::Mat & image, ScaleLines &keyLines);
-  int GetLineDescriptor(cv::Mat & image,
-  		ScaleLines &keyLines);
+  int OctaveKeyLines(cv::Mat &image, ScaleLines &keyLines);
+
+  int GetLineDescriptor(cv::Mat &image,
+                        ScaleLines &keyLines);
+
+
+  /**
+   * Match line by their descriptors.
+   * The function will use opencv FlannBasedMatcher to mathc lines.
+   */
   int MatchLineByDescriptor(ScaleLines &keyLinesLeft, ScaleLines &keyLinesRight,
-  		std::vector<short> &matchLeft, std::vector<short> &matchRight,
-  		int criteria=NNDR);
-  float LowestThreshold;//global threshold for line descriptor distance, default is 0.35
-  float NNDRThreshold;//the NNDR threshold for line descriptor distance, default is 0.6
+                            std::vector<short> &matchLeft, std::vector<short> &matchRight,
+                            int criteria = NNDR);
+
+  /**
+   * Global threshold for line descriptor distance, default is 0.35.
+   */
+  float LowestThreshold;
+
+  /**
+   * The NNDR threshold for line descriptor distance, default is 0.6.
+   */
+  float NNDRThreshold;
 private:
+  void sample(float *igray, float *ogray, float factor, int width, int height)
+  {
 
-	void sample(float *igray,float *ogray, float factor, int width, int height)
-	{
+    int swidth = (int) ((float) width / factor);
+    int sheight = (int) ((float) height / factor);
 
-		int swidth = (int)((float) width / factor);
-		int sheight = (int)((float) height / factor);
+    for (int j = 0; j < sheight; j++)
+      for (int i = 0; i < swidth; i++)
+        ogray[j * swidth + i] = igray[(int) ((float) j * factor) * width + (int) ((float) i * factor)];
 
-		for(int j=0; j < sheight; j++)
-		 for(int i=0; i < swidth; i++)
-			ogray[j*swidth + i] = igray[(int)((float) j * factor) * width + (int) ((float) i*factor)];
+  }
 
-	}
-	void sampleUchar(uchar *igray,uchar *ogray, float factor, int width, int height)
-    {
+  void sampleUchar(uchar *igray, uchar *ogray, float factor, int width, int height)
+  {
 
-        int swidth = (int)((float) width / factor);
-        int sheight = (int)((float) height / factor);
+    int swidth = (int) ((float) width / factor);
+    int sheight = (int) ((float) height / factor);
 
-        for(int j=0; j < sheight; j++)
-         for(int i=0; i < swidth; i++)
-            ogray[j*swidth + i] = igray[(int)((float) j * factor) * width + (int) ((float) i*factor)];
+    for (int j = 0; j < sheight; j++)
+      for (int i = 0; i < swidth; i++)
+        ogray[j * swidth + i] = igray[(int) ((float) j * factor) * width + (int) ((float) i * factor)];
 
-    }
-	/*Compute the line descriptor of input line set. This function should be called
-	 *after OctaveKeyLines() function; */
-	int ComputeLBD_(ScaleLines &keyLines);
-	/*For each octave of image, we define an EDLineDetector, because we can get gradient images (dxImg, dyImg, gImg)
-	 *from the EDLineDetector class without extra computation cost. Another reason is that, if we use
-	 *a single EDLineDetector to detect lines in different octave of images, then we need to allocate and release
-	 *memory for gradient images (dxImg, dyImg, gImg) repeatedly for their varying size*/
-	std::vector<EDLineDetector*> edLineVec_;
+  }
 
-	int ksize_; //the size of Gaussian kernel: ksize X ksize, default value is 5.
-	unsigned int  numOfOctave_;//the number of image octave
-	unsigned int  numOfBand_;//the number of band used to compute line descriptor
-	unsigned int  widthOfBand_;//the width of band;
-	std::vector<float> gaussCoefL_;//the local gaussian coefficient apply to the orthogonal line direction within each band;
-	std::vector<float> gaussCoefG_;//the global gaussian coefficient apply to each Row within line support region
+  /**
+   * Compute the line descriptor of input line set. This function should be called
+   * after OctaveKeyLines() function.
+   */
+  int ComputeLBD_(ScaleLines &keyLines);
+
+  /**
+   * For each octave of image, we define an EDLineDetector, because we can get gradient images (dxImg, dyImg, gImg)
+   * from the EDLineDetector class without extra computation cost. Another reason is that, if we use
+   * a single EDLineDetector to detect lines in different octave of images, then we need to allocate and release
+   * memory for gradient images (dxImg, dyImg, gImg) repeatedly for their varying size
+   */
+  std::vector<EDLineDetector *> edLineVec_;
+
+  /**
+   * The size of Gaussian kernel: ksize X ksize, default value is 5.
+   */
+  int ksize_;
+
+  /**
+   * The number of image octave.
+   */
+  unsigned int numOfOctave_;
+
+  /**
+   * The number of band used to compute line descriptor.
+   */
+  unsigned int numOfBand_;
+
+  /**
+   * The width of band.
+   */
+  unsigned int widthOfBand_;
+
+  /**
+   * The local gaussian coefficient apply to the orthogonal line direction within each band.
+   */
+  std::vector<float> gaussCoefL_;
+
+  /**
+   * The global gaussian coefficient applied to each Row within the line support region.
+   */
+  std::vector<float> gaussCoefG_;
 };
-
-
-
-
-
 
 #endif /* LINEDESCRIPTOR_HH_ */
