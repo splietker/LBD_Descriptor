@@ -43,9 +43,6 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "lbd_descriptor/PairwiseLineMatching.hh"
 
-#include <vector>
-#include <limits>
-
 #include <arlsmat.h>
 #include <arlssym.h>
 #include <opencv2/opencv.hpp>
@@ -99,7 +96,7 @@ double PairwiseLineMatching::GlobalRotationOfImagePair_(ScaleLines &linesInLeft,
   double rotationAngle = 0;
 
   // Step 1: compute the angle histogram of lines in the left and right images
-  unsigned int dim = 360 / ResolutionScale; //number of the bins of histogram
+  unsigned int dim = (unsigned int) (360 / ResolutionScale); //number of the bins of histogram
   unsigned int index; //index in the histogram
   double direction;
   double scalar = 180 / (ResolutionScale * PI);//used when compute the index
@@ -115,7 +112,7 @@ double PairwiseLineMatching::GlobalRotationOfImagePair_(ScaleLines &linesInLeft,
   {
     direction = linesInLeft[linenum][0].direction + PI + angleShift;
     direction = direction < TWO_PI ? direction : (direction - TWO_PI);
-    index = floor(direction * scalar);
+    index = (unsigned int) floor(direction * scalar);
     angleHistLeft.at<double>(0, index) += 1;
     lengthLeft.at<double>(0, index) += linesInLeft[linenum][0].lineLength;
   }
@@ -123,7 +120,7 @@ double PairwiseLineMatching::GlobalRotationOfImagePair_(ScaleLines &linesInLeft,
   {
     direction = linesInRight[linenum][0].direction + PI + angleShift;
     direction = direction < TWO_PI ? direction : (direction - TWO_PI);
-    index = floor(direction * scalar);
+    index = (unsigned int) floor(direction * scalar);
     angleHistRight.at<double>(0, index) += 1;
     lengthRight.at<double>(0, index) += linesInRight[linenum][0].lineLength;
   }
@@ -137,14 +134,11 @@ double PairwiseLineMatching::GlobalRotationOfImagePair_(ScaleLines &linesInLeft,
   vector<double> difVec(dim); // The difference vector between left histogram and shifted right histogram
   double minDif = 10; // The minimal angle histogram difference
   double secondMinDif = 10; // The second minimal histogram difference
-  unsigned int minShift; // The shift of right angle histogram when minimal difference achieved
-  unsigned int secondMinShift; // The shift of right angle histogram when second minimal difference achieved
+  unsigned int minShift = 0; // The shift of right angle histogram when minimal difference achieved
 
   vector<double> lengthDifVec(dim); // The length difference vector between left and right
   double minLenDif = 10; // The minimal length difference
   double secondMinLenDif = 10; // The second minimal length difference
-  unsigned int minLenShift; // The shift of right length vector when minimal length difference achieved
-  unsigned int secondMinLenShift; // The shift of right length vector when the second minimal length difference achieved
 
   double normOfVec;
   for (unsigned int shift = 0; shift < dim; shift++)
@@ -163,14 +157,12 @@ double PairwiseLineMatching::GlobalRotationOfImagePair_(ScaleLines &linesInLeft,
       if (normOfVec < minDif)
       {
         secondMinDif = minDif;
-        secondMinShift = minShift;
         minDif = normOfVec;
         minShift = shift;
       }
       else
       {
         secondMinDif = normOfVec;
-        secondMinShift = shift;
       }
     }
     // Find the minLenShift and secondMinLenShift of length vector
@@ -180,14 +172,11 @@ double PairwiseLineMatching::GlobalRotationOfImagePair_(ScaleLines &linesInLeft,
       if (normOfVec < minLenDif)
       {
         secondMinLenDif = minLenDif;
-        secondMinLenShift = minLenShift;
         minLenDif = normOfVec;
-        minLenShift = shift;
       }
       else
       {
         secondMinLenDif = normOfVec;
-        secondMinLenShift = shift;
       }
     }
   }
@@ -213,8 +202,8 @@ double PairwiseLineMatching::GlobalRotationOfImagePair_(ScaleLines &linesInLeft,
 
 void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleLines &linesInRight)
 {
-  unsigned int numLineLeft = linesInLeft.size();
-  unsigned int numLineRight = linesInRight.size();
+  unsigned int numLineLeft = (unsigned int) linesInLeft.size();
+  unsigned int numLineRight = (unsigned int) linesInRight.size();
 
   /* Step 1: find nodes which are possible correspondent lines in the left and right images according to
    * their direction, gray value and gradient magnitude. */
@@ -225,10 +214,8 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
     return;
   }
 
-  unsigned int dimOfDes = linesInLeft[0][0].descriptor.size();
+  unsigned long dimOfDes = linesInLeft[0][0].descriptor.size();
   Mat desDisMat(numLineLeft, numLineRight, CV_64F);
-  std::vector<float> desLeft;
-  std::vector<float> desRight;
 
 // //store descriptor for debug
 //	Matrix<double> desCripLeft(numLineLeft,dimOfDes);
@@ -251,15 +238,15 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
   float minDis, dis, temp;
   for (unsigned int idL = 0; idL < numLineLeft; idL++)
   {
-    short sameLineSize = linesInLeft[idL].size();
+    unsigned long sameLineSize = linesInLeft[idL].size();
     for (unsigned int idR = 0; idR < numLineRight; idR++)
     {
       minDis = 100;
-      short sameLineSizeR = linesInRight[idR].size();
+      unsigned long sameLineSizeR = linesInRight[idR].size();
       for (short lineIDInSameLines = 0; lineIDInSameLines < sameLineSize; lineIDInSameLines++)
       {
         desOld = linesInLeft[idL][lineIDInSameLines].descriptor.data();
-        for (short lineIDInSameLinesR = 0; lineIDInSameLinesR < sameLineSizeR; lineIDInSameLinesR++)
+        for (unsigned long lineIDInSameLinesR = 0; lineIDInSameLinesR < sameLineSizeR; lineIDInSameLinesR++)
         {
           desL = desOld;
           desR = linesInRight[idR][lineIDInSameLinesR].descriptor.data();
@@ -315,26 +302,26 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
 //	desDisMat.Save("DescriptorDis.txt");
 #endif // #ifdef DEBUG_OUTPUT
 
-  /* Step 2: step, build the adjacency matrix which reflect the geometric constraints between nodes.
-   * The matrix is stored in the Compressed Sparse Column(CSC) format. */
-  unsigned int dim = nodesList_.size(); // Dimension of the problem.
+  // Step 2: step, build the adjacency matrix which reflect the geometric constraints between nodes.
+  // The matrix is stored in the Compressed Sparse Column(CSC) format.
+  unsigned int dim = (unsigned int) nodesList_.size(); // Dimension of the problem.
   int nnz = 0; // Number of non-zero elements in adjacenceMat.
-  /* adjacenceVec only store the lower part of the adjacency matrix which is a symmetric matrix.
-   *                    | 0  1  0  2  0 |
-   *                    | 1  0  3  0  1 |
-   * eg:  adjMatrix =   | 0  3  0  2  0 |
-   *                    | 2  0  2  0  3 |
-   *                    | 0  1  0  3  0 |
-   * adjacenceVec = [0,1,0,2,0,0,3,0,1,0,2,0,0,3,0]
-   */
-  vector<double> adjacenceVec(dim * (dim + 1) / 2, 0.0);
-  /* In order to save computational time, the following variables are used to store
-   * the pairwise geometric information which has been computed and will be reused many times
-   * latter. The reduction of computational time is at the expenses of memory consumption. */
+  // adjacenceVec only store the lower part of the adjacency matrix which is a symmetric matrix.
+  //                    | 0  1  0  2  0 |
+  //                    | 1  0  3  0  1 |
+  // eg:  adjMatrix =   | 0  3  0  2  0 |
+  //                    | 2  0  2  0  3 |
+  //                    | 0  1  0  3  0 |
+  // adjacenceVec = [0,1,0,2,0,0,3,0,1,0,2,0,0,3,0]
 
-  // Flag to show whether the ith pair of the left/right image has already been computed.
-  bool bComputedLeft[numLineLeft][numLineRight] = {false};
-  bool bComputedRight[numLineRight][numLineRight] = {false};
+  vector<double> adjacenceVec(dim * (dim + 1) / 2, 0.0);
+  // In order to save computational time, the following variables are used to store
+  // the pairwise geometric information which has been computed and will be reused many times
+  // latter. The reduction of computational time is at the expenses of memory consumption.
+
+  // Matrix of flags to show whether the ith pair of the left/right image has already been computed.
+  vector<bool> computedLeft(numLineLeft * numLineLeft, false);
+  vector<bool> computedRight(numLineRight * numLineRight, false);
 
   // The ratio of intersection point and the line in the left/right pair
   Mat intersecRatioLeft(numLineLeft, numLineLeft, CV_64F);
@@ -344,12 +331,10 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
   Mat projRatioLeft(numLineLeft, numLineLeft, CV_64F);
   Mat projRatioRight(numLineRight, numLineRight, CV_64F);
 
-  double gradientMagRatioLeft, gradientMagRatioRight; // The ratio of gradient magnitude of lines in each pair.
-
   double iRatio1L, iRatio1R, iRatio2L, iRatio2R;
   double pRatio1L, pRatio1R, pRatio2L, pRatio2R;
 
-  double gradientMagRatioDif, iRatioDif, pRatioDif;
+  double iRatioDif, pRatioDif;
 
   double a1b2_a2b1; // a1b2 - a2b1
   double length1, length2, len;
@@ -388,7 +373,7 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
        * Check whether the geometric information of pairs (idLeft1,idLeft2) and (idRight1,idRight2)
        * have already been computed.
        */
-      if (not bComputedLeft[idLeft1][idLeft2])
+      if (not computedLeft.at(idLeft1 * numLineLeft + idLeft2))
       { // Have not been computed yet
         /* compute the intersection point of segment i and j.
          * a1x + b1y + c1 = 0 and a2x + b2y + c2 = 0.
@@ -444,8 +429,8 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
         projRatioLeft.at<double>(idLeft2, idLeft1) = pRatio2L;
 
         // Mark them as computed
-        bComputedLeft[idLeft1][idLeft2] = true;
-        bComputedLeft[idLeft2][idLeft1] = true;
+        computedLeft.at(idLeft1 * numLineLeft + idLeft2) = true;
+        computedLeft.at(idLeft2 * numLineLeft + idLeft1) = true;
       }
       else
       { // Read the information from the matrix.
@@ -455,7 +440,7 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
         pRatio2L = projRatioLeft.at<double>(idLeft2, idLeft1);
       }
 
-      if (!bComputedRight[idRight1][idRight2])
+      if (not computedRight.at(idRight1 * numLineRight + idRight2))
       { // Have not been computed yet
         double a1, a2, b1, b2, c1, c2; // Line1: a1 x + b1 y + c1 =0; line2: a2 x + b2 y + c2=0
         a1 = linesInRight[idRight1][0].endPointY - linesInRight[idRight1][0].startPointY; // disY
@@ -509,8 +494,8 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
         projRatioRight.at<double>(idRight2, idRight1) = pRatio2R;
 
         // Mark them as computed
-        bComputedRight[idRight1][idRight2] = true;
-        bComputedRight[idRight2][idRight1] = true;
+        computedRight.at(idRight1 * numLineRight + idRight2) = true;
+        computedRight.at(idRight2 * numLineRight + idRight1) = true;
       }
       else
       { // Read these information from matrix
