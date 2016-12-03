@@ -44,9 +44,9 @@ the use of this software, even if advised of the possibility of such damage.
 #include <stdlib.h>
 #include "lbd_descriptor/LineDescriptor.hh"
 
-#define SalienceScale 0.9//0.9
 
-//#define DEBUGLinesInOctaveImages
+namespace lbd_descriptor
+{
 
 using namespace std;
 
@@ -415,11 +415,12 @@ int LineDescriptor::OctaveKeyLines(cv::Mat &image, ScaleLines &keyLines)
   return 1;
 }
 
-/*The definitions of line descriptor,mean values of {g_dL>0},{g_dL<0},{g_dO>0},{g_dO<0} of each row in band
- *and std values of sum{g_dL>0},sum{g_dL<0},sum{g_dO>0},sum{g_dO<0} of each row in band.
- * With overlap region. */
 int LineDescriptor::ComputeLBD_(ScaleLines &keyLines)
 {
+  // The definitions of line descriptor,mean values of {g_dL>0},{g_dL<0},{g_dO>0},{g_dO<0} of each row in band
+  // and std values of sum{g_dL>0},sum{g_dL<0},sum{g_dO>0},sum{g_dO<0} of each row in band.
+  // With overlap region.
+
   //the default length of the band is the line length.
   short numOfFinalLine = keyLines.size();
   float *dL = new float[2];//line direction cos(dir), sin(dir)
@@ -706,16 +707,17 @@ int LineDescriptor::GetLineDescriptor(cv::Mat &image, ScaleLines &keyLines)
     cerr << "OctaveKeyLines failed" << endl;
     return -1;
   }
-  t = ((double) cv::getTickCount() - t) / cv::getTickFrequency();
-#ifdef DEBUG_OUTPUT
-  std::cout<<"time line extraction: "<<t<<"s"<<std::endl;
-#endif // #ifdef DEBUG_OUTPUT
+  double d1 = ((double) cv::getTickCount() - t) / cv::getTickFrequency();
 
-//    t = (double)cv::getTickCount();
+  t = (double)cv::getTickCount();
   ComputeLBD_(keyLines);
-//    t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-//    std::cout<<"time descriptor extraction: "<<t<<"s"<<std::endl;
-//    
+  double d2 = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+#ifdef DEBUG_OUTPUT
+  std::cout<<"num lines: " << keyLines.size() << std::endl;
+  std::cout<<"time line extraction: "<<d1<<"s"<<std::endl;
+  std::cout<<"time descriptor computation: "<<d2<<"s"<<std::endl;
+  std::cout<<std::endl;
+#endif // #ifdef DEBUG_OUTPUT
 
 //    for(int j = 0; j<keyLines.size(); j++)
 //    {
@@ -788,3 +790,4 @@ int LineDescriptor::MatchLineByDescriptor(ScaleLines &keyLinesLeft, ScaleLines &
   }
 }
 
+} // namespace lbd_descriptor

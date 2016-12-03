@@ -49,6 +49,9 @@ the use of this software, even if advised of the possibility of such damage.
 #include "LineDescriptor.hh"
 
 
+namespace lbd_descriptor
+{
+
 /**
  * Each node in the graph is a possible line matching pair in the left and right image.
  */
@@ -142,5 +145,6 @@ private:
   double minOfPrincipalEigenVector_;
 };
 
+} // namespace lbd_descriptor
 
 #endif /* PAIRWISELINEMATCHING_HH_ */

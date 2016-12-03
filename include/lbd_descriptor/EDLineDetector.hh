@@ -55,6 +55,9 @@ the use of this software, even if advised of the possibility of such damage.
 #include <array>
 
 
+namespace lbd_descriptor
+{
+
 struct Pixel{
 	unsigned int x;//X coordinate
 	unsigned int y;//Y coordinate
@@ -416,5 +419,7 @@ private:
 		return -log10(bin_tail) - logNT;
 	}
 };
+
+} // namespace lbd_descriptor
 
 #endif /* EDLINEDETECTOR_HH_ */

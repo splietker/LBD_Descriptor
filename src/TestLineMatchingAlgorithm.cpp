@@ -54,6 +54,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 using namespace cv;
 using namespace std;
+using namespace lbd_descriptor;
 
 void usage(int argc, char** argv){
 	cout<<"Usage: "<<argv[0]<<"  image1.png"<<"  image2.png"<<endl;

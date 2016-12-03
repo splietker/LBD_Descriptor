@@ -50,6 +50,9 @@ the use of this software, even if advised of the possibility of such damage.
 #include "LineStructure.hh"
 
 
+namespace lbd_descriptor
+{
+
 struct OctaveLine
 {
   /**
@@ -92,16 +95,17 @@ public:
     NNDR = 1//nearest/next ratio
   };
 
-  /*This function is used to detect lines from multi-scale images.*/
+  /**
+   * This function is used to detect lines from multi-scale images.
+   */
   int OctaveKeyLines(cv::Mat &image, ScaleLines &keyLines);
 
-  int GetLineDescriptor(cv::Mat &image,
-                        ScaleLines &keyLines);
+  int GetLineDescriptor(cv::Mat &image, ScaleLines &keyLines);
 
 
   /**
    * Match line by their descriptors.
-   * The function will use opencv FlannBasedMatcher to mathc lines.
+   * The function will use opencv FlannBasedMatcher to match lines.
    */
   int MatchLineByDescriptor(ScaleLines &keyLinesLeft, ScaleLines &keyLinesRight,
                             std::vector<short> &matchLeft, std::vector<short> &matchRight,
@@ -117,7 +121,7 @@ public:
    */
   float NNDRThreshold;
 private:
-  void sample(float *igray, float *ogray, float factor, int width, int height)
+  static void sample(float *igray, float *ogray, float factor, int width, int height)
   {
 
     int swidth = (int) ((float) width / factor);
@@ -129,7 +133,7 @@ private:
 
   }
 
-  void sampleUchar(uchar *igray, uchar *ogray, float factor, int width, int height)
+  static void sampleUchar(uchar *igray, uchar *ogray, float factor, int width, int height)
   {
 
     int swidth = (int) ((float) width / factor);
@@ -185,5 +189,7 @@ private:
    */
   std::vector<float> gaussCoefG_;
 };
+
+} // namespace lbd_descriptor
 
 #endif /* LINEDESCRIPTOR_HH_ */

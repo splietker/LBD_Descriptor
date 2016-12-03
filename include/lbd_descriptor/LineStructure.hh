@@ -47,6 +47,9 @@ the use of this software, even if advised of the possibility of such damage.
 #include <vector>
 
 
+namespace lbd_descriptor
+{
+
 // A 2D line (normal equation parameters).
 struct SingleLine
 {
@@ -108,9 +111,16 @@ struct OctaveSingleLine
 	std::vector<float> descriptor;
 };
 
-// Specifies a vector of lines.
+/**
+ * Specifies a vector of lines.
+ */
 typedef std::vector<OctaveSingleLine> LinesVec;
 
-typedef std::vector<LinesVec> ScaleLines;//each element in ScaleLines is a vector of lines which corresponds the same line detected in different octave images.
+/**
+ * Each element in ScaleLines is a vector of lines which corresponds the same line detected in different octave images.
+ */
+typedef std::vector<LinesVec> ScaleLines;
+
+} // namespace lbd_descriptor
 
 #endif /* LINESTRUCTURE_HH_ */

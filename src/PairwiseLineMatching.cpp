@@ -47,6 +47,10 @@ the use of this software, even if advised of the possibility of such damage.
 #include <arlssym.h>
 #include <opencv2/opencv.hpp>
 
+
+namespace lbd_descriptor
+{
+
 using namespace std;
 using cv::Mat;
 using cv::norm;
@@ -728,3 +732,4 @@ void PairwiseLineMatching::MatchingResultFromPrincipalEigenvector_(ScaleLines &l
 #endif // #ifdef DEBUG_OUTPUT
 }
 
+} // namespace lbd_descriptor

@@ -56,7 +56,12 @@ the use of this software, even if advised of the possibility of such damage.
 //#define DEBUGEdgeDrawing
 //#define DEBUGEDLine
 
+
+namespace lbd_descriptor
+{
+
 using namespace std;
+
 EDLineDetector::EDLineDetector()
 {
 	//	cout<<"Call EDLineDetector constructor function"<<endl;
@@ -1296,4 +1301,4 @@ int EDLineDetector::EDline(cv::Mat &image, bool smoothed)
 	return 1;
 }
 
-
+} // namespace lbd_descriptor
