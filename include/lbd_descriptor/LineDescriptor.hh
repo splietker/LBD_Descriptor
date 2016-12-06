@@ -98,10 +98,13 @@ public:
   /**
    * This function is used to detect lines from multi-scale images.
    */
-  int OctaveKeyLines(cv::Mat &image, ScaleLines &keyLines);
+  int GetKeyLines(cv::Mat &image, ScaleLines &keyLines);
 
-  int GetLineDescriptor(cv::Mat &image, ScaleLines &keyLines);
-
+  /**
+   * Compute the line descriptor of input line set. This function should be called
+   * after OctaveKeyLines() function.
+   */
+  int ComputeDescriptors(ScaleLines &keyLines);
 
   /**
    * Match line by their descriptors.
@@ -144,12 +147,6 @@ private:
         ogray[j * swidth + i] = igray[(int) ((float) j * factor) * width + (int) ((float) i * factor)];
 
   }
-
-  /**
-   * Compute the line descriptor of input line set. This function should be called
-   * after OctaveKeyLines() function.
-   */
-  int ComputeLBD_(ScaleLines &keyLines);
 
   /**
    * For each octave of image, we define an EDLineDetector, because we can get gradient images (dxImg, dyImg, gImg)

@@ -139,10 +139,9 @@ LineDescriptor::~LineDescriptor()
   }
 }
 
-/*Line detection method: element in keyLines[i] includes a set of lines which is the same line
- * detected in different octave images.
- */
-int LineDescriptor::OctaveKeyLines(cv::Mat &image, ScaleLines &keyLines)
+/* Line detection method: element in keyLines[i] includes a set of lines which is the same line
+ * detected in different octave images. */
+int LineDescriptor::GetKeyLines(cv::Mat &image, ScaleLines &keyLines)
 {
   unsigned int numOfFinalLine = 0;
 
@@ -415,7 +414,7 @@ int LineDescriptor::OctaveKeyLines(cv::Mat &image, ScaleLines &keyLines)
   return 1;
 }
 
-int LineDescriptor::ComputeLBD_(ScaleLines &keyLines)
+int LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
 {
   // The definitions of line descriptor,mean values of {g_dL>0},{g_dL<0},{g_dO>0},{g_dO<0} of each row in band
   // and std values of sum{g_dL>0},sum{g_dL<0},sum{g_dO>0},sum{g_dO<0} of each row in band.
@@ -637,28 +636,28 @@ int LineDescriptor::ComputeLBD_(ScaleLines &keyLines)
       desVec = pSingleLine->descriptor.data();
       for (short i = 0; i < numOfBand_; i++)
       {
-        tempM += (*desVec) * *(desVec++);//desVec[8*i+0] * desVec[8*i+0];
-        tempM += (*desVec) * *(desVec++);//desVec[8*i+1] * desVec[8*i+1];
-        tempM += (*desVec) * *(desVec++);//desVec[8*i+2] * desVec[8*i+2];
-        tempM += (*desVec) * *(desVec++);//desVec[8*i+3] * desVec[8*i+3];
-        tempS += (*desVec) * *(desVec++);//desVec[8*i+4] * desVec[8*i+4];
-        tempS += (*desVec) * *(desVec++);//desVec[8*i+5] * desVec[8*i+5];
-        tempS += (*desVec) * *(desVec++);//desVec[8*i+6] * desVec[8*i+6];
-        tempS += (*desVec) * *(desVec++);//desVec[8*i+7] * desVec[8*i+7];
+        tempM += desVec[8 * i + 0] * desVec[8 * i + 0];
+        tempM += desVec[8 * i + 1] * desVec[8 * i + 1];
+        tempM += desVec[8 * i + 2] * desVec[8 * i + 2];
+        tempM += desVec[8 * i + 3] * desVec[8 * i + 3];
+        tempS += desVec[8 * i + 4] * desVec[8 * i + 4];
+        tempS += desVec[8 * i + 5] * desVec[8 * i + 5];
+        tempS += desVec[8 * i + 6] * desVec[8 * i + 6];
+        tempS += desVec[8 * i + 7] * desVec[8 * i + 7];
       }
       tempM = 1 / sqrt(tempM);
       tempS = 1 / sqrt(tempS);
       desVec = pSingleLine->descriptor.data();
       for (short i = 0; i < numOfBand_; i++)
       {
-        (*desVec) = *(desVec++) * tempM;//desVec[8*i] =  desVec[8*i] * tempM;
-        (*desVec) = *(desVec++) * tempM;//desVec[8*i+1] =  desVec[8*i+1] * tempM;
-        (*desVec) = *(desVec++) * tempM;//desVec[8*i+2] =  desVec[8*i+2] * tempM;
-        (*desVec) = *(desVec++) * tempM;//desVec[8*i+3] =  desVec[8*i+3] * tempM;
-        (*desVec) = *(desVec++) * tempS;//desVec[8*i+4] =  desVec[8*i+4] * tempS;
-        (*desVec) = *(desVec++) * tempS;//desVec[8*i+5] =  desVec[8*i+5] * tempS;
-        (*desVec) = *(desVec++) * tempS;//desVec[8*i+6] =  desVec[8*i+6] * tempS;
-        (*desVec) = *(desVec++) * tempS;//desVec[8*i+7] =  desVec[8*i+7] * tempS;
+        desVec[8 * i + 0] = desVec[8 * i + 0] * tempM;
+        desVec[8 * i + 1] = desVec[8 * i + 1] * tempM;
+        desVec[8 * i + 2] = desVec[8 * i + 2] * tempM;
+        desVec[8 * i + 3] = desVec[8 * i + 3] * tempM;
+        desVec[8 * i + 4] = desVec[8 * i + 4] * tempS;
+        desVec[8 * i + 5] = desVec[8 * i + 5] * tempS;
+        desVec[8 * i + 6] = desVec[8 * i + 6] * tempS;
+        desVec[8 * i + 7] = desVec[8 * i + 7] * tempS;
       }
       /*In order to reduce the influence of non-linear illumination,
        *a threshold is used to limit the value of element in the unit feature
@@ -699,38 +698,6 @@ int LineDescriptor::ComputeLBD_(ScaleLines &keyLines)
 }
 
 
-int LineDescriptor::GetLineDescriptor(cv::Mat &image, ScaleLines &keyLines)
-{
-  double t = (double) cv::getTickCount();
-  if (!OctaveKeyLines(image, keyLines))
-  {
-    cerr << "OctaveKeyLines failed" << endl;
-    return -1;
-  }
-  double d1 = ((double) cv::getTickCount() - t) / cv::getTickFrequency();
-
-  t = (double)cv::getTickCount();
-  ComputeLBD_(keyLines);
-  double d2 = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
-#ifdef DEBUG_OUTPUT
-  std::cout<<"num lines: " << keyLines.size() << std::endl;
-  std::cout<<"time line extraction: "<<d1<<"s"<<std::endl;
-  std::cout<<"time descriptor computation: "<<d2<<"s"<<std::endl;
-  std::cout<<std::endl;
-#endif // #ifdef DEBUG_OUTPUT
-
-//    for(int j = 0; j<keyLines.size(); j++)
-//    {
-//        for(int k = 0; k<keyLines[j].size(); k++)
-//        {
-//            for(int i = 0; i<keyLines[j][k].descriptor.size(); i++)
-//                std::cout<<"keylines["<<j<<"]["<<k<<"].descriptor["<<i<<"]: "<<keyLines[j][k].descriptor[i]<<std::endl;
-//        }
-//    }
-
-  return 1;
-}
-
 int LineDescriptor::MatchLineByDescriptor(ScaleLines &keyLinesLeft, ScaleLines &keyLinesRight,
                                           std::vector<short> &matchLeft, std::vector<short> &matchRight,
                                           int criteria)
@@ -769,7 +736,9 @@ int LineDescriptor::MatchLineByDescriptor(ScaleLines &keyLinesLeft, ScaleLines &
             dis = 0;
             while (desR < desMax)
             {
-              temp = *(desL++) - *(desR++);
+              temp = *(desL) - *(desR);
+              desL++;
+              desR++;
               dis += temp * temp;
             }
             dis = sqrt(dis);
