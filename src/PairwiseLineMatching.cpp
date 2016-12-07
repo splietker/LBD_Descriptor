@@ -46,6 +46,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <arlsmat.h>
 #include <arlssym.h>
 #include <opencv2/opencv.hpp>
+#include <stdlib.h>
 
 
 namespace lbd_descriptor
@@ -282,7 +283,7 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
       }
 
       double lengthDiff = abs(linesInLeft[i][0].lineLength - linesInRight[j][0].lineLength) /
-                         MIN(linesInLeft[i][0].lineLength, linesInRight[j][0].lineLength);
+                          MIN(linesInLeft[i][0].lineLength, linesInRight[j][0].lineLength);
       if (lengthDiff > LengthDifThreshold)
       {
         continue; // The length difference is too large.
@@ -421,8 +422,10 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
         intersecRatioLeft.at<double>(idLeft2, idLeft1) = iRatio2L; // Line order changed
 
         // Project the end points of line1 onto line2 and compute their distances to line2.
-        double disS = abs(a2 * linesInLeft[idLeft1][0].startPointX + b2 * linesInLeft[idLeft1][0].startPointY + c2) / length2;
-        double disE = abs(a2 * linesInLeft[idLeft1][0].endPointX + b2 * linesInLeft[idLeft1][0].endPointY + c2) / length2;
+        double disS =
+            abs(a2 * linesInLeft[idLeft1][0].startPointX + b2 * linesInLeft[idLeft1][0].startPointY + c2) / length2;
+        double disE =
+            abs(a2 * linesInLeft[idLeft1][0].endPointX + b2 * linesInLeft[idLeft1][0].endPointY + c2) / length2;
         pRatio1L = (disS + disE) / length1;
         projRatioLeft.at<double>(idLeft1, idLeft2) = pRatio1L;
 
@@ -484,9 +487,11 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
         intersecRatioRight.at<double>(idRight2, idRight1) = iRatio2R;// line order changed
 
         // Project the end points of line1 onto line2 and compute their distances to line2.
-        double disS = abs(a2 * linesInRight[idRight1][0].startPointX + b2 * linesInRight[idRight1][0].startPointY + c2) /
-               length2;
-        double disE = abs(a2 * linesInRight[idRight1][0].endPointX + b2 * linesInRight[idRight1][0].endPointY + c2) / length2;
+        double disS =
+            abs(a2 * linesInRight[idRight1][0].startPointX + b2 * linesInRight[idRight1][0].startPointY + c2) /
+            length2;
+        double disE =
+            abs(a2 * linesInRight[idRight1][0].endPointX + b2 * linesInRight[idRight1][0].endPointY + c2) / length2;
         pRatio1R = (disS + disE) / length1;
         projRatioRight.at<double>(idRight1, idRight2) = pRatio1R;
 
@@ -695,12 +700,12 @@ void PairwiseLineMatching::MatchingResultFromPrincipalEigenvector_(ScaleLines &l
       double pointX = 0.5 * (linesInLeft[idLeft2][0].startPointX + linesInLeft[idLeft2][0].endPointX);
       double pointY = 0.5 * (linesInLeft[idLeft2][0].startPointY + linesInLeft[idLeft2][0].endPointY);
       double sideValueL = (pointY - linesInLeft[idLeft1][0].startPointY) * xe_xsLeft
-                   - (pointX - linesInLeft[idLeft1][0].startPointX) * ye_ysLeft;
+                          - (pointX - linesInLeft[idLeft1][0].startPointX) * ye_ysLeft;
       sideValueL = sideValueL / coefLeft;
       pointX = 0.5 * (linesInRight[idRight2][0].startPointX + linesInRight[idRight2][0].endPointX);
       pointY = 0.5 * (linesInRight[idRight2][0].startPointY + linesInRight[idRight2][0].endPointY);
       double sideValueR = (pointY - linesInRight[idRight1][0].startPointY) * xe_xsRight
-                   - (pointX - linesInRight[idRight1][0].startPointX) * ye_ysRight;
+                          - (pointX - linesInRight[idRight1][0].startPointX) * ye_ysRight;
       sideValueR = sideValueR / coefRight;
 
       if (sideValueL * sideValueR < 0 && abs(sideValueL) > 5 && abs(sideValueR) > 5)
@@ -730,6 +735,81 @@ void PairwiseLineMatching::MatchingResultFromPrincipalEigenvector_(ScaleLines &l
 #ifdef DEBUG_OUTPUT
   cout << "matchRet.size" << matchRet.size() << ", minOfPrincipalEigenVector_= " << minOfPrincipalEigenVector_ << endl;
 #endif // #ifdef DEBUG_OUTPUT
+}
+
+void
+PairwiseLineMatching::PlotMatching(std::string path, std::vector<unsigned int> matching, cv::Mat imageLeft,
+                                   ScaleLines &linesInLeft, cv::Mat imageRight,
+                                   ScaleLines &linesInRight)
+{
+  srand(time(NULL));
+  int lowest = 0, highest = 255;
+  int range = (highest - lowest) + 1;
+
+  for (unsigned int i = 0; i < linesInLeft.size(); i++)
+  {
+    unsigned int r = lowest + int(rand() % range);
+    unsigned int g = lowest + int(rand() % range);
+    unsigned int b = lowest + int(rand() % range);
+    cv::Point startPoint = cv::Point(int(linesInLeft[i][0].startPointX), int(linesInLeft[i][0].startPointY));
+    cv::Point endPoint = cv::Point(int(linesInLeft[i][0].endPointX), int(linesInLeft[i][0].endPointY));
+    cv::line(imageLeft, startPoint, endPoint, cv::Scalar(r, g, b));
+  }
+
+  for (unsigned int i = 0; i < linesInRight.size(); i++)
+  {
+    unsigned int r = lowest + int(rand() % range);
+    unsigned int g = lowest + int(rand() % range);
+    unsigned int b = lowest + int(rand() % range);
+    cv::Point startPoint = cv::Point(int(linesInRight[i][0].startPointX), int(linesInRight[i][0].startPointY));
+    cv::Point endPoint = cv::Point(int(linesInRight[i][0].endPointX), int(linesInRight[i][0].endPointY));
+    cv::line(imageRight, startPoint, endPoint, cv::Scalar(r, g, b));
+  }
+
+  std::vector<unsigned int> r1(matching.size() / 2), g1(matching.size() / 2), b1(
+      matching.size() / 2); // The color of lines
+  for (unsigned int pair = 0; pair < matching.size() / 2; pair++)
+  {
+    r1[pair] = lowest + int(rand() % range);
+    g1[pair] = lowest + int(rand() % range);
+    b1[pair] = 255 - r1[pair];
+    double ww1 = 0.2 * (rand() % 5);
+    double ww2 = 1 - ww1;
+    char buf[10];
+    sprintf(buf, "%d ", pair);
+    int lineIDLeft = matching[2 * pair];
+    int lineIDRight = matching[2 * pair + 1];
+    cv::Point startPoint = cv::Point2i(int(linesInLeft[lineIDLeft][0].startPointX),
+                                       int(linesInLeft[lineIDLeft][0].startPointY));
+    cv::Point endPoint = cv::Point2i(int(linesInLeft[lineIDLeft][0].endPointX),
+                                     int(linesInLeft[lineIDLeft][0].endPointY));
+    line(imageLeft, startPoint, endPoint, CvScalar(r1[pair], g1[pair], b1[pair]), 3, CV_AA);
+    startPoint = cv::Point2i(int(linesInRight[lineIDRight][0].startPointX),
+                             int(linesInRight[lineIDRight][0].startPointY));
+    endPoint = cv::Point2i(int(linesInRight[lineIDRight][0].endPointX), int(linesInRight[lineIDRight][0].endPointY));
+    line(imageRight, startPoint, endPoint, CvScalar(r1[pair], g1[pair], b1[pair]), 3, CV_AA);
+  }
+
+  cv::Size sz = imageLeft.size();
+  Mat result(sz.height, sz.width * 2, CV_8UC3);
+  Mat result_left(result, cv::Rect(0, 0, sz.width, sz.height));
+  imageLeft.copyTo(result_left);
+  Mat result_right(result, cv::Rect(sz.width, 0, sz.width, sz.height));
+  imageRight.copyTo(result_right);
+
+  int imageWidth = imageLeft.cols;
+  for (unsigned int pair = 0; pair < matching.size() / 2; pair++)
+  {
+    int lineIDLeft = matching[2 * pair];
+    int lineIDRight = matching[2 * pair + 1];
+    cv::Point startPoint = cvPoint(int(linesInLeft[lineIDLeft][0].startPointX),
+                                   int(linesInLeft[lineIDLeft][0].startPointY));
+    cv::Point endPoint = cvPoint(int(linesInRight[lineIDRight][0].startPointX + imageWidth),
+                                 int(linesInRight[lineIDRight][0].startPointY));
+    line(result, startPoint, endPoint, CvScalar(r1[pair], g1[pair], b1[pair]), 1, CV_AA);
+  }
+
+  imwrite(path, result);
 }
 
 } // namespace lbd_descriptor
