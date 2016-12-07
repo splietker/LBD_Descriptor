@@ -45,6 +45,8 @@ the use of this software, even if advised of the possibility of such damage.
 #define PAIRWISELINEMATCHING_HH_
 
 #include <map>
+#include <string>
+#include <opencv2/core/mat.hpp>
 
 #include "LineDescriptor.hh"
 
@@ -88,6 +90,9 @@ public:
 
   void LineMatching(ScaleLines &linesInLeft, ScaleLines &linesInRight,
                     std::vector<unsigned int> &matchResult);
+
+  static void PlotMatching(std::string path, std::vector<unsigned int> matching, cv::Mat imageLeft, ScaleLines &linesInLeft, cv::Mat imageRight,
+                           ScaleLines &linesInRight);
 
 private:
   /**
