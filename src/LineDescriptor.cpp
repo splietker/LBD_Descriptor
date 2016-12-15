@@ -61,7 +61,7 @@ LineDescriptor::LineDescriptor(LineDescriptorParameters parameters) : parameters
   edLineVec_.resize(parameters_.numOfOctave);
   for (unsigned int i = 0; i < parameters_.numOfOctave; i++)
   {
-    edLineVec_[i] = new EDLineDetector;
+    edLineVec_[i] = new EDLineDetector(parameters_.edLineParam);
   }
   gaussCoefL_.resize(parameters_.widthOfBand * 3);
   double u = (parameters_.widthOfBand * 3 - 1) / 2;
