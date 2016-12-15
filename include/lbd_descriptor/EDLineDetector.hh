@@ -10,6 +10,7 @@
 
 Copyright (C) 2011-2012, Lilian Zhang, all rights reserved.
 Copyright (C) 2013, Manuele Tamburrano, Stefano Fabri, all rights reserved.
+Copyright (C) 2016, Malte Splietker, all rights reserved.
 Third party copyrights are property of their respective owners.
 
 To extract edge and lines, this library implements the EDLines Algorithm and the Edge Drawing detector:
@@ -77,15 +78,82 @@ struct LineChains{
 
 typedef  std::list<Pixel> PixelChain;//each edge is a pixel chain
 
-
 struct EDLineParam{
+  EDLineParam()
+			: ksize(5),
+				sigma(1.0),
+				gradientThreshold(80),
+				anchorThreshold(8),
+				scanIntervals(2),
+				minLineLen(15),
+				lineFitErrThreshold(1.6),
+				sobelKSize(3),
+				sobelScale(1.0),
+				sobelDelta(0)
+	{}
+
+  /**
+   * The size of Gaussian kernel: ksize X ksize.
+   * Default value is 5.
+   */
 	int ksize;
+
+	/**
+	 * The sigma of the Gaussian kernel.
+	 * Default value is 1.0.
+	 */
 	float sigma;
-	float gradientThreshold;
+
+  /**
+   * The gradient threshold for possible edge points.
+   * Only those pixel whose gradient magnitude are larger than this threshold will be taken as possible edge points.
+   * Default value is 80.
+   */
+	double gradientThreshold;
+
+  /**
+   * The gradient threshold for anchors.
+   * If the pixel's gradient value is bigger than both of its neighbors by this threshold (ANCHOR_THRESHOLD),
+   * the pixel is marked to be an anchor. Default value is 8.
+   */
 	float anchorThreshold;
+
+  /**
+   * The scan intervals for anchors.
+   * Anchor testing can be performed at different scan intervals, i.e., every row/column, every second row/column etc.
+   * Default value is 2.
+   */
 	int scanIntervals;
+
+  /**
+   * The minimal acceptable line length.
+   * Default value is 15.
+   */
 	int minLineLen;
+
+	/**
+	 * The threshold of line fit error.
+	 * If lineFitErr is large than this threshold, then the pixel chain is not accepted as a single line segment.
+	 */
 	double lineFitErrThreshold;
+
+	/**
+	 * The kernel size of the sobel filters.
+	 * Default value is 3.
+	 */
+	unsigned int sobelKSize;
+
+	/**
+	 * The scale factor of the Sobel filters.
+	 * Default value is 1.0.
+	 */
+	double sobelScale;
+
+	/**
+	 * The delta factor of the Sobel filters.
+	 * Default value is 0.
+	 */
+	double sobelDelta;
 };
 
 #define RELATIVE_ERROR_FACTOR   100.0
@@ -173,32 +241,9 @@ private:
 			unsigned int offsetS, unsigned int offsetE,
 			std::array<double, 3> &lineEquation, float &direction);
   bool bValidate_;//flag to decide whether line will be validated
-	int ksize_; //the size of Gaussian kernel: ksize X ksize, default value is 5.
-	float sigma_;//the sigma of Gaussian kernal, default value is 1.0.
-	/*the threshold of pixel gradient magnitude.
-	 *Only those pixel whose gradient magnitude are larger than this threshold will be
-	 *taken as possible edge points. Default value is 36*/
-	short gradienThreshold_;
-	/*If the pixel's gradient value is bigger than both of its neighbors by a
-	 *certain threshold (ANCHOR_THRESHOLD), the pixel is marked to be an anchor.
-	 *Default value is 8*/
-	unsigned char anchorThreshold_;
-	/*anchor testing can be performed at different scan intervals, i.e.,
-	 *every row/column, every second row/column etc.
-	 *Default value is 2*/
-	unsigned int scanIntervals_;
-	int minLineLen_;//minimal acceptable line length
-	/*For example, there two edges in the image:
-	 *edge1 = [(7,4), (8,5), (9,6),| (10,7)|, (11, 8), (12,9)] and
-	 *edge2 = [(14,9), (15,10), (16,11), (17,12),| (18, 13)|, (19,14)] ; then we store them as following:
-	 *pFirstPartEdgeX_ = [10, 11, 12, 18, 19];//store the first part of each edge[from middle to end]
-	 *pFirstPartEdgeY_ = [7,  8,  9,  13, 14];
-	 *pFirstPartEdgeS_ = [0,3,5];// the index of start point of first part of each edge
-	 *pSecondPartEdgeX_ = [10, 9, 8, 7, 18, 17, 16, 15, 14];//store the second part of each edge[from middle to front]
-	 *pSecondPartEdgeY_ = [7,  6, 5, 4, 13, 12, 11, 10, 9];//anchor points(10, 7) and (18, 13) are stored again
-	 *pSecondPartEdgeS_ = [0, 4, 9];// the index of start point of second part of each edge
-	 *This type of storage order is because of the order of edge detection process.
-	 *For each edge, start from one anchor point, first go right, then go left or first go down, then go up*/
+
+	EDLineParam parameters_;
+
 	unsigned int *pFirstPartEdgeX_;//store the X coordinates of the first part of the pixels for chains
 	unsigned int *pFirstPartEdgeY_;//store the Y coordinates of the first part of the pixels for chains
 	unsigned int *pFirstPartEdgeS_;//store the start index of every edge chain in the first part arrays
@@ -211,7 +256,6 @@ private:
 	/*The threshold of line fit error;
 	 *If lineFitErr is large than this threshold, then
 	 *the pixel chain is not accepted as a single line segment.*/
-	double lineFitErrThreshold_;
 
 
 	cv::Mat gImg_;//store the gradient image;

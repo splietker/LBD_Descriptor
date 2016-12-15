@@ -55,7 +55,7 @@ LineDescriptor::LineDescriptor()
   srand(time(NULL));
 //	cout<<"Call LineDescriptor constructor function"<<endl;
   ksize_ = 5;
-  numOfOctave_ = 5;
+  numOfOctave_ = 2;
   edLineVec_.resize(numOfOctave_);
   for (unsigned int i = 0; i < numOfOctave_; i++)
   {

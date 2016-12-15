@@ -10,6 +10,7 @@
 
 Copyright (C) 2011-2012, Lilian Zhang, all rights reserved.
 Copyright (C) 2013, Manuele Tamburrano, Stefano Fabri, all rights reserved.
+Copyright (C) 2016, Malte Splietker, all rights reserved.
 Third party copyrights are property of their respective owners.
 
 To extract edge and lines, this library implements the EDLines Algorithm and the Edge Drawing detector:
@@ -44,6 +45,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "lbd_descriptor/EDLineDetector.hh"
 
+
 #define Horizontal  255//if |dx|<|dy|;
 #define Vertical    0//if |dy|<=|dx|;
 #define UpDir       1
@@ -64,29 +66,14 @@ using namespace std;
 
 EDLineDetector::EDLineDetector()
 {
-	//	cout<<"Call EDLineDetector constructor function"<<endl;
-	//set parameters for line segment detection
-	ksize_ = 5;
-	sigma_ = 1.0;
-	gradienThreshold_ = 80; // ***** ORIGINAL WAS 25
-	anchorThreshold_  = 2;//8
-	scanIntervals_    = 2;//2
-	minLineLen_       = 15;
-	lineFitErrThreshold_ = 1.4;
 	InitEDLine_();
 }
-EDLineDetector::EDLineDetector(EDLineParam param)
+
+EDLineDetector::EDLineDetector(EDLineParam param) : parameters_(param)
 {
-	//set parameters for line segment detection
-	ksize_ = param.ksize;
-	sigma_ = param.sigma;
-	gradienThreshold_ = param.gradientThreshold;
-	anchorThreshold_  = param.anchorThreshold;
-	scanIntervals_    = param.scanIntervals;
-	minLineLen_       = param.minLineLen;
-	lineFitErrThreshold_ = param.lineFitErrThreshold;
 	InitEDLine_();
 }
+
 void EDLineDetector::InitEDLine_()
 {
 	bValidate_           = true;
@@ -94,9 +81,9 @@ void EDLineDetector::InitEDLine_()
 	ATV = cv::Mat_<int>(1,2);
 	tempMatLineFit = cv::Mat_<int>(2,2);
 	tempVecLineFit = cv::Mat_<int>(1,2);
-	fitMatT = cv::Mat_<int>(2,minLineLen_);
-	fitVec = cv::Mat_<int>(1,minLineLen_);
-	for(int i=0; i<minLineLen_; i++){
+	fitMatT = cv::Mat_<int>(2,parameters_.minLineLen);
+	fitVec = cv::Mat_<int>(1,parameters_.minLineLen);
+	for(int i=0; i<parameters_.minLineLen; i++){
 		fitMatT[1][i] = 1;
 	}
 	dxImg_.create( 1, 1, CV_16SC1 );
@@ -111,6 +98,7 @@ void EDLineDetector::InitEDLine_()
 	pAnchorX_ = NULL;
 	pAnchorY_ = NULL;
 }
+
 EDLineDetector::~EDLineDetector(){
 	if(pFirstPartEdgeX_!=NULL){
 		delete [] pFirstPartEdgeX_;
@@ -150,7 +138,7 @@ int EDLineDetector::EdgeDrawing(cv::Mat &image, EdgeChains &edgeChains, bool smo
     #endif
 	if(!smoothed){//input image hasn't been smoothed.
 	    cv::Mat InImage = image.clone();
-	    cv::GaussianBlur(InImage, image, cv::Size(ksize_,ksize_), sigma_);
+	    cv::GaussianBlur(InImage, image, cv::Size(parameters_.ksize,parameters_.ksize), parameters_.sigma);
 	}
 	
 	#ifdef DEBUGEdgeDrawing
@@ -193,15 +181,14 @@ int EDLineDetector::EdgeDrawing(cv::Mat &image, EdgeChains &edgeChains, bool smo
 		pAnchorX_ = new unsigned int[edgePixelArraySize];
 		pAnchorY_ = new unsigned int[edgePixelArraySize];
 	}
-	cv::Sobel( image, dxImg_, CV_16SC1, 1, 0, 3);
-	cv::Sobel( image, dyImg_, CV_16SC1, 0, 1, 3);
+	cv::Sobel( image, dxImg_, CV_16SC1, 1, 0, 3, 1.0, 0);
+	cv::Sobel( image, dyImg_, CV_16SC1, 0, 1, 3, 1.0, 0);
 
-
-    #ifdef DEBUGEdgeDrawing
-        cv::imshow("dxImg_", dxImg_);
-        cv::imshow("dyImg_", dyImg_);
-        cv::waitKey();
-    #endif
+#ifdef DEBUGEdgeDrawing
+  cv::imshow("dxImg_", dxImg_);
+  cv::imshow("dyImg_", dyImg_);
+  cv::waitKey();
+#endif
 	
 	//compute gradient and direction images
 
@@ -211,8 +198,7 @@ int EDLineDetector::EdgeDrawing(cv::Mat &image, EdgeChains &edgeChains, bool smo
 	cv::Mat sumDxDy;
 	cv::add(dyABS_m, dxABS_m, sumDxDy);
 
-	
-	cv::threshold(sumDxDy,gImg_, gradienThreshold_+1, 255, cv::THRESH_TOZERO);
+	cv::threshold(sumDxDy,gImg_, parameters_.gradientThreshold+1, 255, cv::THRESH_TOZERO);
 	gImg_ = gImg_/4;
 	gImgWO_ = sumDxDy/4;
 	cv::compare(dxABS_m, dyABS_m, dirImg_, cv::CMP_LT);
@@ -233,21 +219,21 @@ int EDLineDetector::EdgeDrawing(cv::Mat &image, EdgeChains &edgeChains, bool smo
 	unsigned int anchorsSize = 0;
 	int indexInArray;
 	unsigned char gValue1, gValue2, gValue3;
-	for(unsigned int w=1; w<imageWidth-1; w=w+scanIntervals_){
-		for(unsigned int h=1; h<imageHeight-1; h=h+scanIntervals_){
+	for(unsigned int w=1; w<imageWidth-1; w=w+parameters_.scanIntervals){
+		for(unsigned int h=1; h<imageHeight-1; h=h+parameters_.scanIntervals){
 			indexInArray = h*imageWidth+w;
 			//gValue1 = pdirImg[indexInArray];
 			if(pdirImg[indexInArray]==Horizontal){//if the direction of pixel is horizontal, then compare with up and down
 				//gValue2 = pgImg[indexInArray];
-				if(pgImg[indexInArray]>=pgImg[indexInArray-imageWidth]+anchorThreshold_
-						&&pgImg[indexInArray]>=pgImg[indexInArray+imageWidth]+anchorThreshold_){// (w,h) is accepted as an anchor
+				if(pgImg[indexInArray]>=pgImg[indexInArray-imageWidth]+parameters_.anchorThreshold
+						&&pgImg[indexInArray]>=pgImg[indexInArray+imageWidth]+parameters_.anchorThreshold){// (w,h) is accepted as an anchor
 							pAnchorX_[anchorsSize]   = w;
 							pAnchorY_[anchorsSize++] = h;
 				}
 			}else{// if(pdirImg[indexInArray]==Vertical){//it is vertical edge, should be compared with left and right
 				//gValue2 = pgImg[indexInArray];
-				if(pgImg[indexInArray]>=pgImg[indexInArray-1]+anchorThreshold_
-						&&pgImg[indexInArray]>=pgImg[indexInArray+1]+anchorThreshold_){// (w,h) is accepted as an anchor
+				if(pgImg[indexInArray]>=pgImg[indexInArray-1]+parameters_.anchorThreshold
+						&&pgImg[indexInArray]>=pgImg[indexInArray+1]+parameters_.anchorThreshold){// (w,h) is accepted as an anchor
 							pAnchorX_[anchorsSize]   = w;
 							pAnchorY_[anchorsSize++] = h;
 				}
@@ -726,10 +712,10 @@ int EDLineDetector::EdgeDrawing(cv::Mat &image, EdgeChains &edgeChains, bool smo
 				indexInArray = y*imageWidth+x;
 			}//end while go up
 		}//end anchor is Vertical
-		//only keep the edge chains whose length is larger than the minLineLen_;
+		//only keep the edge chains whose length is larger than the parameters_.minLineLen;
 		edgeLenFirst = offsetPFirst - pFirstPartEdgeS_[offsetPS];
 		edgeLenSecond = offsetPSecond - pSecondPartEdgeS_[offsetPS];
-		if(edgeLenFirst+edgeLenSecond<minLineLen_+1){//short edge, drop it
+		if(edgeLenFirst+edgeLenSecond<parameters_.minLineLen+1){//short edge, drop it
 			offsetPFirst = pFirstPartEdgeS_[offsetPS];
 			offsetPSecond = pSecondPartEdgeS_[offsetPS];
 		}else{
@@ -855,15 +841,15 @@ int EDLineDetector::EDline(cv::Mat &image, LineChains &lines, bool smoothed)
 	for(unsigned int edgeID=0; edgeID<edges.numOfEdges; edgeID++){
 		offsetInEdgeArrayS = pEdgeSID[edgeID];
 		offsetInEdgeArrayE = pEdgeSID[edgeID+1];
-		while(offsetInEdgeArrayE > offsetInEdgeArrayS+minLineLen_){//extract line segments from an edge, may find more than one segments
+		while(offsetInEdgeArrayE > offsetInEdgeArrayS+parameters_.minLineLen){//extract line segments from an edge, may find more than one segments
 			//find an initial line segment
-			while(offsetInEdgeArrayE > offsetInEdgeArrayS+minLineLen_){
+			while(offsetInEdgeArrayE > offsetInEdgeArrayS+parameters_.minLineLen){
 				lineFitErr = LeastSquaresLineFit_(pEdgeXCors,pEdgeYCors,
 						offsetInEdgeArrayS,lineEquation);
-				if(lineFitErr<=lineFitErrThreshold_) break;//ok, an initial line segment detected
+				if(lineFitErr<=parameters_.lineFitErrThreshold) break;//ok, an initial line segment detected
 				offsetInEdgeArrayS +=SkipEdgePoint; //skip the first two pixel in the chain and try with the remaining pixels
 			}
-			if(lineFitErr>lineFitErrThreshold_) break; //no line is detected
+			if(lineFitErr>parameters_.lineFitErrThreshold) break; //no line is detected
 			//An initial line segment is detected. Try to extend this line segment
 			pLineSID[numOfLines] = offsetInLineArray;
 			double coef1;//for a line ax+by+c=0, coef1 = 1/sqrt(a^2+b^2);
@@ -877,7 +863,7 @@ int EDLineDetector::EDline(cv::Mat &image, LineChains &lines, bool smoothed)
 					tryTimes++;
 					if(bFirstTry){
 						bFirstTry = false;
-						for(int i=0; i<minLineLen_; i++){//First add the initial line segment to the line array
+						for(int i=0; i<parameters_.minLineLen; i++){//First add the initial line segment to the line array
 							pLineXCors[offsetInLineArray]   = pEdgeXCors[offsetInEdgeArrayS];
 							pLineYCors[offsetInLineArray++] = pEdgeYCors[offsetInEdgeArrayS++];
 						}
@@ -894,7 +880,7 @@ int EDLineDetector::EDline(cv::Mat &image, LineChains &lines, bool smoothed)
 								pEdgeYCors[offsetInEdgeArrayS] + lineEquation[1])*coef1;
 						pLineXCors[offsetInLineArray] = pEdgeXCors[offsetInEdgeArrayS];
 						pLineYCors[offsetInLineArray++] = pEdgeYCors[offsetInEdgeArrayS++];
-						if(pointToLineDis>lineFitErrThreshold_){
+						if(pointToLineDis>parameters_.lineFitErrThreshold){
 							numOfOutlier++;
 							if(numOfOutlier>3) break;
 						}else{//we count number of connective outliers.
@@ -944,7 +930,7 @@ int EDLineDetector::EDline(cv::Mat &image, LineChains &lines, bool smoothed)
 					tryTimes++;
 					if(bFirstTry){
 						bFirstTry = false;
-						for(int i=0; i<minLineLen_; i++){//First add the initial line segment to the line array
+						for(int i=0; i<parameters_.minLineLen; i++){//First add the initial line segment to the line array
 							pLineXCors[offsetInLineArray]   = pEdgeXCors[offsetInEdgeArrayS];
 							pLineYCors[offsetInLineArray++] = pEdgeYCors[offsetInEdgeArrayS++];
 						}
@@ -961,7 +947,7 @@ int EDLineDetector::EDline(cv::Mat &image, LineChains &lines, bool smoothed)
 								lineEquation[0]*pEdgeYCors[offsetInEdgeArrayS] - lineEquation[1])*coef1;
 						pLineXCors[offsetInLineArray] = pEdgeXCors[offsetInEdgeArrayS];
 						pLineYCors[offsetInLineArray++] = pEdgeYCors[offsetInEdgeArrayS++];
-						if(pointToLineDis>lineFitErrThreshold_){
+						if(pointToLineDis>parameters_.lineFitErrThreshold){
 							numOfOutlier++;
 							if(numOfOutlier>3) break;
 						}else{//we count number of connective outliers.
@@ -1072,8 +1058,8 @@ double EDLineDetector::LeastSquaresLineFit_(  unsigned int *xCors,   unsigned in
 		 *    .   [b]  =   .
 		 * [xn,1]         [yn]*/
 		pMatT= fitMatT.ptr<float>();//fitMatT = [x0, x1, ... xn; 1,1,...,1];
-		for(int i=0; i<minLineLen_; i++){
-			//*(pMatT+minLineLen_) = 1; //the value are not changed;
+		for(int i=0; i<parameters_.minLineLen; i++){
+			//*(pMatT+parameters_.minLineLen) = 1; //the value are not changed;
 			*(pMatT++)           = xCors[offsetS];
 			fitVec[0][i]            = yCors[offsetS++];
 		}
@@ -1086,7 +1072,7 @@ double EDLineDetector::LeastSquaresLineFit_(  unsigned int *xCors,   unsigned in
 		lineEquation[0] = coef *( double(pATA[3])*double(ATV[0][0])-double(pATA[1])*double(ATV[0][1]));
 		lineEquation[1] = coef *( double(pATA[0])*double(ATV[0][1])-double(pATA[2])*double(ATV[0][0]));
 		/*compute line fit error */
-		for(int i=0; i<minLineLen_; i++){
+		for(int i=0; i<parameters_.minLineLen; i++){
 			coef = double(yCors[offset]) - double(xCors[offset++]) * lineEquation[0] - lineEquation[1];
 			fitError += coef*coef;
 		}
@@ -1101,8 +1087,8 @@ double EDLineDetector::LeastSquaresLineFit_(  unsigned int *xCors,   unsigned in
 		 *    .   [b]  =   .
 		 * [yn,1]         [xn]*/
 		pMatT = fitMatT.ptr<float>();//fitMatT = [y0, y1, ... yn; 1,1,...,1];
-		for(int i=0; i<minLineLen_; i++){
-			//*(pMatT+minLineLen_) = 1;//the value are not changed;
+		for(int i=0; i<parameters_.minLineLen; i++){
+			//*(pMatT+parameters_.minLineLen) = 1;//the value are not changed;
 			*(pMatT++)           = yCors[offsetS];
 			fitVec[0][i]          = xCors[offsetS++];
 		}
@@ -1115,7 +1101,7 @@ double EDLineDetector::LeastSquaresLineFit_(  unsigned int *xCors,   unsigned in
 		lineEquation[0] = coef *( double(pATA[3])*double(ATV[0][0])-double(pATA[1])*double(ATV[0][1]));
 		lineEquation[1] = coef *( double(pATA[0])*double(ATV[0][1])-double(pATA[2])*double(ATV[0][0]));
 		/*compute line fit error */
-		for(int i=0; i<minLineLen_; i++){
+		for(int i=0; i<parameters_.minLineLen; i++){
 			coef = double(xCors[offset]) - double(yCors[offset++]) * lineEquation[0] - lineEquation[1];
 			fitError += coef*coef;
 		}
