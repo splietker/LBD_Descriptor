@@ -287,7 +287,7 @@ int LineDescriptor::GetKeyLines(cv::Mat &image, ScaleLines &keyLines)
         }
         octaveLines[numOfFinalLine].octaveCount = octaveCount;
         octaveLines[numOfFinalLine].lineIDInOctave = lineCurId;
-        octaveLines[numOfFinalLine].lineLength = length;
+        octaveLines[numOfFinalLine].lineLength = (float) length;
         numOfFinalLine++;
       }
     }//end for(unsigned int octaveCount = 1; octaveCount<parameters_.numOfOctave; octaveCount++)
@@ -370,19 +370,19 @@ int LineDescriptor::GetKeyLines(cv::Mat &image, ScaleLines &keyLines)
   return 1;
 }
 
-int LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
+void LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
 {
   // The definitions of line descriptor,mean values of {g_dL>0},{g_dL<0},{g_dO>0},{g_dO<0} of each row in band
   // and std values of sum{g_dL>0},sum{g_dL<0},sum{g_dO>0},sum{g_dO<0} of each row in band.
   // With overlap region.
 
   //the default length of the band is the line length.
-  short numOfFinalLine = keyLines.size();
+  unsigned long numOfFinalLine = keyLines.size();
   float *dL = new float[2];//line direction cos(dir), sin(dir)
   float *dO = new float[2];//the clockwise orthogonal vector of line direction.
-  short heightOfLSP = parameters_.widthOfBand * parameters_.numOfBand;//the height of line support region;
-  short descriptorSize =
-      parameters_.numOfBand * 8;//each band, we compute the m( pgdL, ngdL,  pgdO, ngdO) and std( pgdL, ngdL,  pgdO, ngdO);
+  unsigned int heightOfLSP = parameters_.widthOfBand * parameters_.numOfBand;//the height of line support region;
+  unsigned int descriptorSize = parameters_.numOfBand *
+                                8;//each band, we compute the m( pgdL, ngdL,  pgdO, ngdO) and std( pgdL, ngdL,  pgdO, ngdO);
   float pgdLRowSum;//the summation of {g_dL |g_dL>0 } for each row of the region;
   float ngdLRowSum;//the summation of {g_dL |g_dL<0 } for each row of the region;
   float pgdL2RowSum;//the summation of {g_dL^2 |g_dL>0 } for each row of the region;
@@ -401,24 +401,24 @@ int LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
   float *pgdO2BandSum = new float[parameters_.numOfBand];//the summation of {g_dO^2 |g_dO>0 } for each band of the region;
   float *ngdO2BandSum = new float[parameters_.numOfBand];//the summation of {g_dO^2 |g_dO<0 } for each band of the region;
 
-  short numOfBitsBand = parameters_.numOfBand * sizeof(float);
-  short lengthOfLSP; //the length of line support region, varies with lines
-  short halfHeight = (heightOfLSP - 1) / 2;
-  short halfWidth;
-  short bandID;
+  size_t numOfBitsBand = parameters_.numOfBand * sizeof(float);
+  unsigned int lengthOfLSP; //the length of line support region, varies with lines
+  unsigned int halfHeight = (heightOfLSP - 1) / 2;
+  unsigned int halfWidth;
+  int bandID;
   float coefInGaussion;
   float lineMiddlePointX, lineMiddlePointY;
   float sCorX, sCorY, sCorX0, sCorY0;
-  short tempCor, xCor, yCor;//pixel coordinates in image plane
+  unsigned int tempCor, xCor, yCor;//pixel coordinates in image plane
   short dx, dy;
   float gDL;//store the gradient projection of pixels in support region along dL vector
   float gDO;//store the gradient projection of pixels in support region along dO vector
-  short imageWidth, imageHeight, realWidth;
+  unsigned int imageWidth, imageHeight, realWidth;
   short *pdxImg, *pdyImg;
   float *desVec;
 
-  short sameLineSize;
-  short octaveCount;
+  unsigned long sameLineSize;
+  unsigned int octaveCount;
   OctaveSingleLine *pSingleLine;
   for (short lineIDInScaleVec = 0; lineIDInScaleVec < numOfFinalLine; lineIDInScaleVec++)
   {
@@ -443,8 +443,8 @@ int LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
       memset(ngdO2BandSum, 0, numOfBitsBand);
       lengthOfLSP = keyLines[lineIDInScaleVec][lineIDInSameLine].numOfPixels;
       halfWidth = (lengthOfLSP - 1) / 2;
-      lineMiddlePointX = 0.5 * (pSingleLine->sPointInOctaveX + pSingleLine->ePointInOctaveX);
-      lineMiddlePointY = 0.5 * (pSingleLine->sPointInOctaveY + pSingleLine->ePointInOctaveY);
+      lineMiddlePointX = (float) (0.5 * (pSingleLine->sPointInOctaveX + pSingleLine->ePointInOctaveX));
+      lineMiddlePointY = (float) (0.5 * (pSingleLine->sPointInOctaveY + pSingleLine->ePointInOctaveY));
       /*1.rotate the local coordinate system to the line direction
        *2.compute the gradient projection of pixels in line support region*/
       dL[0] = cos(pSingleLine->direction);
@@ -467,9 +467,9 @@ int LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
 
         for (short wID = 0; wID < lengthOfLSP; wID++)
         {
-          tempCor = round(sCorX);
+          tempCor = (unsigned int) MAX(0.0, round(sCorX));
           xCor = (tempCor < 0) ? 0 : (tempCor > imageWidth) ? imageWidth : tempCor;
-          tempCor = round(sCorY);
+          tempCor = (unsigned int) MAX(0.0, round(sCorY));
           yCor = (tempCor < 0) ? 0 : (tempCor > imageHeight) ? imageHeight : tempCor;
           /* To achieve rotation invariance, each simple gradient is rotated aligned with
            * the line direction and clockwise orthogonal direction.*/
@@ -556,11 +556,11 @@ int LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
       //construct line descriptor
       pSingleLine->descriptor.resize(descriptorSize);
       desVec = pSingleLine->descriptor.data();
-      short desID;
+      unsigned int desID;
       /*Note that the first and last bands only have (lengthOfLSP * parameters_.widthOfBand * 2.0) pixels
        * which are counted. */
-      float invN2 = 1.0 / (parameters_.widthOfBand * 2.0);
-      float invN3 = 1.0 / (parameters_.widthOfBand * 3.0);
+      float invN2 = (float) (1.0 / (parameters_.widthOfBand * 2.0));
+      float invN3 = (float) (1.0 / (parameters_.widthOfBand * 3.0));
       float invN, temp;
       for (bandID = 0; bandID < parameters_.numOfBand; bandID++)
       {
@@ -570,7 +570,7 @@ int LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
         }
         else
         { invN = invN3; }
-        desID = bandID * 8;
+        desID = (unsigned int) bandID * 8;
         temp = pgdLBandSum[bandID] * invN;
         desVec[desID] = temp;//mean value of pgdL;
         desVec[desID + 4] = sqrt(pgdL2BandSum[bandID] * invN - temp * temp);//std value of pgdL;
@@ -658,8 +658,8 @@ int LineDescriptor::MatchLineByDescriptor(ScaleLines &keyLinesLeft, ScaleLines &
                                           std::vector<short> &matchLeft, std::vector<short> &matchRight,
                                           int criteria)
 {
-  int leftSize = keyLinesLeft.size();
-  int rightSize = keyLinesRight.size();
+  unsigned long leftSize = keyLinesLeft.size();
+  unsigned long rightSize = keyLinesRight.size();
   if (leftSize < 1 || rightSize < 1)
   {
     return -1;
@@ -668,22 +668,22 @@ int LineDescriptor::MatchLineByDescriptor(ScaleLines &keyLinesLeft, ScaleLines &
   matchLeft.clear();
   matchRight.clear();
 
-  int desDim = keyLinesLeft[0][0].descriptor.size();
+  unsigned long desDim = keyLinesLeft[0][0].descriptor.size();
   float *desL, *desR, *desMax, *desOld;
   if (criteria == NearestNeighbor)
   {
     float minDis, dis, temp;
-    int corresId;
-    for (int idL = 0; idL < leftSize; idL++)
+    short corresId = -1;
+    for (short idL = 0; idL < leftSize; idL++)
     {
-      short sameLineSize = keyLinesLeft[idL].size();
+      unsigned long sameLineSize = keyLinesLeft[idL].size();
       minDis = 100;
       for (short lineIDInSameLines = 0; lineIDInSameLines < sameLineSize; lineIDInSameLines++)
       {
         desOld = keyLinesLeft[idL][lineIDInSameLines].descriptor.data();
-        for (int idR = 0; idR < rightSize; idR++)
+        for (short idR = 0; idR < rightSize; idR++)
         {
-          short sameLineSizeR = keyLinesRight[idR].size();
+          unsigned long sameLineSizeR = keyLinesRight[idR].size();
           for (short lineIDInSameLinesR = 0; lineIDInSameLinesR < sameLineSizeR; lineIDInSameLinesR++)
           {
             desL = desOld;
@@ -704,15 +704,16 @@ int LineDescriptor::MatchLineByDescriptor(ScaleLines &keyLinesLeft, ScaleLines &
               corresId = idR;
             }
           }
-        }//end for(int idR=0; idR<rightSize; idR++)
-      }//end for(short lineIDInSameLines = 0; lineIDInSameLines<sameLineSize; lineIDInSameLines++)
+        }
+      }
       if (minDis < parameters_.lowestThreshold)
       {
         matchLeft.push_back(idL);
         matchRight.push_back(corresId);
       }
-    }// end for(int idL=0; idL<leftSize; idL++)
+    }
   }
+  return 0;
 }
 
 } // namespace lbd_descriptor

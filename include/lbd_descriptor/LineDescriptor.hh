@@ -158,7 +158,7 @@ public:
    * Compute the line descriptor of input line set. This function should be called
    * after OctaveKeyLines() function.
    */
-  int ComputeDescriptors(ScaleLines &keyLines);
+  void ComputeDescriptors(ScaleLines &keyLines);
 
   /**
    * Match line by their descriptors.

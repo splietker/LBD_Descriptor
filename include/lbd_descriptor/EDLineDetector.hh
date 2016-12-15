@@ -59,11 +59,6 @@ the use of this software, even if advised of the possibility of such damage.
 namespace lbd_descriptor
 {
 
-struct Pixel
-{
-  unsigned int x;//X coordinate
-  unsigned int y;//Y coordinate
-};
 struct EdgeChains
 {
   std::vector<unsigned int> xCors;//all the x coordinates of edge points
@@ -78,8 +73,6 @@ struct LineChains
   std::vector<unsigned int> sId;  //the start index of each line in the coordinate arrays
   unsigned int numOfLines;//the number of lines whose length are larger than minLineLen; numOfLines < sId.size;
 };
-
-typedef std::list<Pixel> PixelChain;//each edge is a pixel chain
 
 struct EDLineParam
 {
@@ -295,9 +288,9 @@ private:
     double abs_diff, aa, bb, abs_max;
     /* trivial case */
     if (a == b) return true;
-    abs_diff = fabs(a - b);
-    aa = fabs(a);
-    bb = fabs(b);
+    abs_diff = std::abs(a - b);
+    aa = std::abs(a);
+    bb = std::abs(b);
     abs_max = aa > bb ? aa : bb;
     /* DBL_MIN is the smallest normalized number, thus, the smallest
         number whose relative error is bounded by DBL_EPSILON. For
@@ -336,15 +329,15 @@ private:
     static double q[7] = {75122.6331530, 80916.6278952, 36308.2951477,
                           8687.24529705, 1168.92649479, 83.8676043424,
                           2.50662827511};
-    double a = (x + 0.5) * log(x + 5.5) - (x + 5.5);
+    double a = (x + 0.5) * (double) log((long double) x + 5.5) - (x + 5.5);
     double b = 0.0;
     int n;
     for (n = 0; n < 7; n++)
     {
-      a -= log(x + (double) n);
-      b += q[n] * pow(x, (double) n);
+      a -= log(x + (long double) n);
+      b += q[n] * pow(x, (long double) n);
     }
-    return a + log(b);
+    return (double) (a + log((long double) b));
   }
 
   /** Computes the natural logarithm of the absolute value of
@@ -364,8 +357,10 @@ private:
    */
   static double log_gamma_windschitl(double x)
   {
-    return 0.918938533204673 + (x - 0.5) * log(x) - x
-           + 0.5 * x * log(x * sinh(1 / x) + 1 / (810.0 * pow(x, 6.0)));
+    long double x_ld = x;
+    long double result = 0.918938533204673 + (x - 0.5) * log(x_ld) - x
+                         + 0.5 * x * log(x * sinh(1 / x_ld) + 1 / (810.0 * pow(x_ld, 6.0)));
+    return (double) result;
   }
 
   /** Computes -log10(NFA).
@@ -405,7 +400,6 @@ private:
   static double nfa(int n, int k, double p, double logNT)
   {
     double tolerance = 0.1;       /* an error of 10% in the result is accepted */
-    double log1term, term, bin_term, mult_term, bin_tail, err, p_term;
     int i;
 
     /* check parameters */
@@ -416,10 +410,10 @@ private:
     }
     /* trivial cases */
     if (n == 0 || k == 0) return -logNT;
-    if (n == k) return -logNT - (double) n * log10(p);
+    if (n == k) return -logNT - (double) (n * log10((long double) p));
 
     /* probability term */
-    p_term = p / (1.0 - p);
+    double p_term = p / (1.0 - p);
 
     /* compute the first term of the series */
     /*
@@ -429,10 +423,12 @@ private:
           bincoef(n,k) = gamma(n+1) / ( gamma(k+1) * gamma(n-k+1) ).
         We use this to compute the first term. Actually the log of it.
      */
-    log1term = log_gamma((double) n + 1.0) - log_gamma((double) k + 1.0)
-               - log_gamma((double) (n - k) + 1.0)
-               + (double) k * log(p) + (double) (n - k) * log(1.0 - p);
-    term = exp(log1term);
+    double log1term = log_gamma(n + 1.0)
+                      - log_gamma(k + 1.0)
+                      - log_gamma((n - k) + 1.0)
+                      + (double) (k * log((long double) p))
+                      + (double) ((n - k) * log(1.0 - (long double) p));
+    double term = (double) exp((long double) log1term);
 
     /* in some cases no more computations are needed */
     if (double_equal(term, 0.0))
@@ -444,7 +440,7 @@ private:
     }
 
     /* compute more terms if needed */
-    bin_tail = term;
+    long double bin_tail = term;
     for (i = k + 1; i <= n; i++)
     {
       /*    As
@@ -457,8 +453,8 @@ private:
               term_i = term_i-1 * (n-i+1)/i * p/(1-p).
             p/(1-p) is computed only once and stored in 'p_term'.
        */
-      bin_term = (double) (n - i + 1) / (double) i;
-      mult_term = bin_term * p_term;
+      double bin_term = (double) (n - i + 1) / (double) i;
+      long double mult_term = bin_term * p_term;
       term *= mult_term;
       bin_tail += term;
       if (bin_term < 1.0)
@@ -467,8 +463,8 @@ private:
                 Then, the error on the binomial tail when truncated at
                 the i term can be bounded by a geometric series of form
                 term_i * sum mult_term_i^j.                            */
-        err = term * ((1.0 - pow(mult_term, (double) (n - i + 1))) /
-                      (1.0 - mult_term) - 1.0);
+        long double err = term * ((1.0 - pow(mult_term, (long double) (n - i + 1))) /
+                                  (1.0 - mult_term) - 1.0);
         /* One wants an error at most of tolerance*final_result, or:
                 tolerance * abs(-log10(bin_tail)-logNT).
                 Now, the error that can be accepted on bin_tail is
@@ -480,7 +476,7 @@ private:
         if (err < tolerance * fabs(-log10(bin_tail) - logNT) * bin_tail) break;
       }
     }
-    return -log10(bin_tail) - logNT;
+    return (double) -log10(bin_tail) - logNT;
   }
 };
 
