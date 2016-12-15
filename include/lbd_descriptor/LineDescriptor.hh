@@ -10,6 +10,7 @@
 
 Copyright (C) 2011-2012, Lilian Zhang, all rights reserved.
 Copyright (C) 2013, Manuele Tamburrano, Stefano Fabri, all rights reserved.
+Copyright (C) 2016, Malte Splietker, all rights reserved.
 Third party copyrights are property of their respective owners.
 
 To extract edge and lines, this library implements the EDLines Algorithm and the Edge Drawing detector:
@@ -76,6 +77,59 @@ struct OctaveLine
   float lineLength;
 };
 
+struct LineDescriptorParameters
+{
+  LineDescriptorParameters() :
+      ksize(5),
+      numOfOctave(5),
+      numOfBand(9),
+      widthOfBand(7),
+      lowestThreshold(0.35),
+      NNDRThreshold(0.6)
+  {}
+
+  /**
+   * The size of Gaussian kernel: ksize X ksize.
+   * Default value is 5.
+   */
+  int ksize;
+
+  /**
+   * The number of image octave.
+   * Default value is 5.
+   */
+  unsigned int numOfOctave;
+
+  /**
+   * The number of band used to compute line descriptor.
+   * Default value is 9.
+   */
+  unsigned int numOfBand;
+
+  /**
+   * The width of band.
+   * Default value is 7.
+   */
+  unsigned int widthOfBand;
+
+  /**
+   * Global threshold for line descriptor distance.
+   * 2 is used to show recall ratio;  0.2 is used to show scale space results, 0.35 is used when verify geometric
+   * constraints. Default value is 0.35
+   */
+  float lowestThreshold;
+
+  /**
+   * The NNDR threshold for line descriptor distance.
+   * Default value is 0.6.
+   */
+  float NNDRThreshold;
+
+  /**
+   * EDLine parameters.
+   */
+  EDLineParam edLineParam;
+};
 
 /**
  * This class is used to generate the line descriptors from multi-scale images
@@ -85,14 +139,14 @@ class LineDescriptor
 public:
   LineDescriptor();
 
-  LineDescriptor(unsigned int numOfBand, unsigned int widthOfBand);
+  LineDescriptor(LineDescriptorParameters parameters);
 
   ~LineDescriptor();
 
   enum
   {
-    NearestNeighbor = 0, //the nearest neighbor is taken as matching
-    NNDR = 1//nearest/next ratio
+    NearestNeighbor = 0, // The nearest neighbor is taken as matching
+    NNDR = 1 // Nearest/next ratio
   };
 
   /**
@@ -114,15 +168,6 @@ public:
                             std::vector<short> &matchLeft, std::vector<short> &matchRight,
                             int criteria = NNDR);
 
-  /**
-   * Global threshold for line descriptor distance, default is 0.35.
-   */
-  float LowestThreshold;
-
-  /**
-   * The NNDR threshold for line descriptor distance, default is 0.6.
-   */
-  float NNDRThreshold;
 private:
   static void sample(float *igray, float *ogray, float factor, int width, int height)
   {
@@ -157,24 +202,9 @@ private:
   std::vector<EDLineDetector *> edLineVec_;
 
   /**
-   * The size of Gaussian kernel: ksize X ksize, default value is 5.
+   * Parameters for LineDescriptor.
    */
-  int ksize_;
-
-  /**
-   * The number of image octave.
-   */
-  unsigned int numOfOctave_;
-
-  /**
-   * The number of band used to compute line descriptor.
-   */
-  unsigned int numOfBand_;
-
-  /**
-   * The width of band.
-   */
-  unsigned int widthOfBand_;
+  LineDescriptorParameters parameters_;
 
   /**
    * The local gaussian coefficient apply to the orthogonal line direction within each band.

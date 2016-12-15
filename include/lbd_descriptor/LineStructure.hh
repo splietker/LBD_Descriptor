@@ -10,6 +10,7 @@
 
 Copyright (C) 2011-2012, Lilian Zhang, all rights reserved.
 Copyright (C) 2013, Manuele Tamburrano, Stefano Fabri, all rights reserved.
+Copyright (C) 2016, Malte Splietker, all rights reserved.
 Third party copyrights are property of their respective owners.
 
 To extract edge and lines, this library implements the EDLines Algorithm and the Edge Drawing detector:
@@ -49,40 +50,6 @@ the use of this software, even if advised of the possibility of such damage.
 
 namespace lbd_descriptor
 {
-
-// A 2D line (normal equation parameters).
-struct SingleLine
-{
-	//note: rho and theta are based on coordinate origin, i.e. the top-left corner of image
-	double rho;//unit: pixel length
-	double theta;//unit: rad
-	double linePointX;// = rho * cos(theta);
-	double linePointY;// = rho * sin(theta);
-	//for EndPoints, the coordinate origin is the top-left corner of image.
-	double startPointX;
-	double startPointY;
-	double endPointX;
-	double endPointY;
-	//direction of a line, the angle between positive line direction (dark side is in the left) and positive X axis.
-	double direction;
-	//mean gradient magnitude
-	double gradientMagnitude;
-	//mean gray value of pixels in dark side of line
-	double darkSideGrayValue;
-	//mean gray value of pixels in light side of line
-	double lightSideGrayValue;
-	//the length of line
-	double lineLength;
-	//the width of line;
-	double width;
-	//number of pixels
-	int numOfPixels;
-	//the decriptor of line
-	std::vector<double> descriptor;
-};
-
-// Specifies a vector of lines.
-typedef std::vector<SingleLine> Lines_list;
 
 struct OctaveSingleLine
 {
