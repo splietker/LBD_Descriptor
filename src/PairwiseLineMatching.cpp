@@ -591,7 +591,18 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
 
   /* Step 3: solve the principal eigenvector of the adjacency matrix using Arpack lib. */
 
+  principalEigenVectorMAP_.clear();
+  minOfPrincipalEigenVector_ = 0;
+
   ARluSymMatrix<double> arMatrix(dim, nnz, adjacenceMat, irow, pcol);
+  delete[] adjacenceMat;
+  delete[] irow;
+  delete[] pcol;
+
+  if (dim > 1)
+  { // Cannot find eigenvectors if dimension too small
+    return;
+  }
 
   // Defining what we need: the first eigenvector of arMatrix with largest magnitude.
   ARluSymStdEig<double> dprob(2, arMatrix, "LM");
@@ -612,8 +623,6 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
   }
 #endif // #ifdef DEBUG_OUTPUT
 
-  principalEigenVectorMAP_.clear();
-
   double meanEigenVec = 0;
   if (dprob.ConvergedEigenvalues() > 0)
   {
@@ -626,9 +635,6 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
     }
   }
   minOfPrincipalEigenVector_ = WeightOfMeanEigenVec * meanEigenVec / dim;
-  delete[] adjacenceMat;
-  delete[] irow;
-  delete[] pcol;
 }
 
 void PairwiseLineMatching::MatchingResultFromPrincipalEigenvector_(ScaleLines &linesInLeft, ScaleLines &linesInRight,
