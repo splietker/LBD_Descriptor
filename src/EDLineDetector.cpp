@@ -181,8 +181,8 @@ int EDLineDetector::EdgeDrawing(cv::Mat &image, EdgeChains &edgeChains, bool smo
     pAnchorX_ = new unsigned int[edgePixelArraySize];
     pAnchorY_ = new unsigned int[edgePixelArraySize];
   }
-  cv::Sobel(image, dxImg_, CV_16SC1, 1, 0, 3, 1.0, 0);
-  cv::Sobel(image, dyImg_, CV_16SC1, 0, 1, 3, 1.0, 0);
+  cv::Sobel(image, dxImg_, CV_16SC1, 1, 0, parameters_.sobelKSize, parameters_.sobelScale, parameters_.sobelDelta);
+  cv::Sobel(image, dyImg_, CV_16SC1, 0, 1, parameters_.sobelKSize, parameters_.sobelScale, parameters_.sobelDelta);
 
 #ifdef DEBUGEdgeDrawing
   cv::imshow("dyImg_", dyImg_);
