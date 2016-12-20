@@ -595,12 +595,12 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
   minOfPrincipalEigenVector_ = 0;
 
   ARluSymMatrix<double> arMatrix(dim, nnz, adjacenceMat, irow, pcol);
-  delete[] adjacenceMat;
-  delete[] irow;
-  delete[] pcol;
 
-  if (dim > 1)
+  if (dim <= 1)
   { // Cannot find eigenvectors if dimension too small
+    delete[] adjacenceMat;
+    delete[] irow;
+    delete[] pcol;
     return;
   }
 
@@ -635,6 +635,10 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
     }
   }
   minOfPrincipalEigenVector_ = WeightOfMeanEigenVec * meanEigenVec / dim;
+
+  delete[] adjacenceMat;
+  delete[] irow;
+  delete[] pcol;
 }
 
 void PairwiseLineMatching::MatchingResultFromPrincipalEigenvector_(ScaleLines &linesInLeft, ScaleLines &linesInRight,
