@@ -417,22 +417,19 @@ void LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
   short *pdxImg, *pdyImg;
   float *desVec;
 
-  unsigned long sameLineSize;
-  unsigned int octaveCount;
-  OctaveSingleLine *pSingleLine;
   for (short lineIDInScaleVec = 0; lineIDInScaleVec < numOfFinalLine; lineIDInScaleVec++)
   {
-    sameLineSize = keyLines[lineIDInScaleVec].size();
+    unsigned long sameLineSize = keyLines[lineIDInScaleVec].size();
     for (short lineIDInSameLine = 0; lineIDInSameLine < sameLineSize; lineIDInSameLine++)
     {
-      pSingleLine = &(keyLines[lineIDInScaleVec][lineIDInSameLine]);
-      octaveCount = pSingleLine->octaveCount;
+      OctaveSingleLine *pSingleLine = &(keyLines[lineIDInScaleVec][lineIDInSameLine]);
+      unsigned int octaveCount = pSingleLine->octaveCount;
       pdxImg = edLineVec_[octaveCount]->dxImg_.ptr<short>();
       pdyImg = edLineVec_[octaveCount]->dyImg_.ptr<short>();
       realWidth = edLineVec_[octaveCount]->imageWidth;
       imageWidth = realWidth - 1;
       imageHeight = edLineVec_[octaveCount]->imageHeight - 1;
-      //initialization
+      // Initialization
       memset(pgdLBandSum, 0, numOfBitsBand);
       memset(ngdLBandSum, 0, numOfBitsBand);
       memset(pgdL2BandSum, 0, numOfBitsBand);
@@ -445,18 +442,17 @@ void LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
       halfWidth = (lengthOfLSP - 1) / 2;
       lineMiddlePointX = (float) (0.5 * (pSingleLine->sPointInOctaveX + pSingleLine->ePointInOctaveX));
       lineMiddlePointY = (float) (0.5 * (pSingleLine->sPointInOctaveY + pSingleLine->ePointInOctaveY));
-      /*1.rotate the local coordinate system to the line direction
-       *2.compute the gradient projection of pixels in line support region*/
+      // 1. Rotate the local coordinate system to the line direction
+      // 2. Compute the gradient projection of pixels in line support region
       dL[0] = cos(pSingleLine->direction);
       dL[1] = sin(pSingleLine->direction);
       dO[0] = -dL[1];
       dO[1] = dL[0];
-      sCorX0 = -dL[0] * halfWidth + dL[1] * halfHeight + lineMiddlePointX;//hID =0; wID = 0;
+      sCorX0 = -dL[0] * halfWidth + dL[1] * halfHeight + lineMiddlePointX; // hID =0; wID = 0;
       sCorY0 = -dL[1] * halfWidth - dL[0] * halfHeight + lineMiddlePointY;
-      //      BIAS::Matrix<float> gDLMat(heightOfLSP,lengthOfLSP);
       for (short hID = 0; hID < heightOfLSP; hID++)
       {
-        //initialization
+        // initialization
         sCorX = sCorX0;
         sCorY = sCorY0;
 
@@ -521,12 +517,12 @@ void LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
         ngdOBandSum[bandID] += coefInGaussion * ngdORowSum;
         pgdO2BandSum[bandID] += coefInGaussion * coefInGaussion * pgdO2RowSum;
         ngdO2BandSum[bandID] += coefInGaussion * coefInGaussion * ngdO2RowSum;
-        /* In order to reduce boundary effect along the line gradient direction,
-         * a row's gradient will contribute not only to its current band, but also
-         * to its nearest upper and down band with gaussCoefL_.*/
+        // In order to reduce boundary effect along the line gradient direction,
+        // a row's gradient will contribute not only to its current band, but also
+        // to its nearest upper and down band with gaussCoefL_.
         bandID--;
         if (bandID >= 0)
-        {//the band above the current band
+        { // The band above the current band
           coefInGaussion = gaussCoefL_[hID % parameters_.widthOfBand + 2 * parameters_.widthOfBand];
           pgdLBandSum[bandID] += coefInGaussion * pgdLRowSum;
           ngdLBandSum[bandID] += coefInGaussion * ngdLRowSum;
@@ -539,7 +535,7 @@ void LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
         }
         bandID = bandID + 2;
         if (bandID < parameters_.numOfBand)
-        {//the band below the current band
+        { // The band below the current band
           coefInGaussion = gaussCoefL_[hID % parameters_.widthOfBand];
           pgdLBandSum[bandID] += coefInGaussion * pgdLRowSum;
           ngdLBandSum[bandID] += coefInGaussion * ngdLRowSum;
@@ -551,14 +547,13 @@ void LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
           ngdO2BandSum[bandID] += coefInGaussion * coefInGaussion * ngdO2RowSum;
         }
       }
-      //			gDLMat.Save("gDLMat.txt");
-      //			return 0;
-      //construct line descriptor
+
+      // Construct line descriptor
       pSingleLine->descriptor.resize(descriptorSize);
       desVec = pSingleLine->descriptor.data();
       unsigned int desID;
-      /*Note that the first and last bands only have (lengthOfLSP * parameters_.widthOfBand * 2.0) pixels
-       * which are counted. */
+      // Note that the first and last bands only have (lengthOfLSP * parameters_.widthOfBand * 2.0) pixels
+      // which are counted.
       float invN2 = (float) (1.0 / (parameters_.widthOfBand * 2.0));
       float invN3 = (float) (1.0 / (parameters_.widthOfBand * 3.0));
       float invN, temp;
@@ -572,20 +567,20 @@ void LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
         { invN = invN3; }
         desID = (unsigned int) bandID * 8;
         temp = pgdLBandSum[bandID] * invN;
-        desVec[desID] = temp;//mean value of pgdL;
-        desVec[desID + 4] = sqrt(pgdL2BandSum[bandID] * invN - temp * temp);//std value of pgdL;
+        desVec[desID] = temp; // Mean value of pgdL
+        desVec[desID + 4] = sqrt(pgdL2BandSum[bandID] * invN - temp * temp); // Std value of pgdL
         temp = ngdLBandSum[bandID] * invN;
-        desVec[desID + 1] = temp;//mean value of ngdL;
-        desVec[desID + 5] = sqrt(ngdL2BandSum[bandID] * invN - temp * temp);//std value of ngdL;
+        desVec[desID + 1] = temp; // Mean value of ngdL
+        desVec[desID + 5] = sqrt(ngdL2BandSum[bandID] * invN - temp * temp); // Std value of ngdL
 
         temp = pgdOBandSum[bandID] * invN;
-        desVec[desID + 2] = temp;//mean value of pgdO;
-        desVec[desID + 6] = sqrt(pgdO2BandSum[bandID] * invN - temp * temp);//std value of pgdO;
+        desVec[desID + 2] = temp; // Mean value of pgdO
+        desVec[desID + 6] = sqrt(pgdO2BandSum[bandID] * invN - temp * temp); // Std value of pgdO
         temp = ngdOBandSum[bandID] * invN;
-        desVec[desID + 3] = temp;//mean value of ngdO;
-        desVec[desID + 7] = sqrt(ngdO2BandSum[bandID] * invN - temp * temp);//std value of ngdO;
+        desVec[desID + 3] = temp; // Mean value of ngdO
+        desVec[desID + 7] = sqrt(ngdO2BandSum[bandID] * invN - temp * temp); // Std value of ngdO
       }
-      //normalize;
+      // Normalize
       float tempM, tempS;
       tempM = 0;
       tempS = 0;
@@ -615,10 +610,10 @@ void LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
         desVec[8 * i + 6] = desVec[8 * i + 6] * tempS;
         desVec[8 * i + 7] = desVec[8 * i + 7] * tempS;
       }
-      /*In order to reduce the influence of non-linear illumination,
-       *a threshold is used to limit the value of element in the unit feature
-       *vector no larger than this threshold. In Z.Wang's work, a value of 0.4 is found
-       *empirically to be a proper threshold.*/
+      // In order to reduce the influence of non-linear illumination,
+      // a threshold is used to limit the value of element in the unit feature
+      // vector no larger than this threshold. In Z.Wang's work, a value of 0.4 is found
+      // empirically to be a proper threshold.
       desVec = pSingleLine->descriptor.data();
       for (short i = 0; i < descriptorSize; i++)
       {
@@ -627,7 +622,7 @@ void LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
           desVec[i] = 0.4;
         }
       }
-      //re-normalize desVec;
+      // Re-normalize desVec
       temp = 0;
       for (short i = 0; i < descriptorSize; i++)
       {
@@ -638,8 +633,8 @@ void LineDescriptor::ComputeDescriptors(ScaleLines &keyLines)
       {
         desVec[i] = desVec[i] * temp;
       }
-    }//end for(short lineIDInSameLine = 0; lineIDInSameLine<sameLineSize; lineIDInSameLine++)
-  }//end for(short lineIDInScaleVec = 0; lineIDInScaleVec<numOfFinalLine; lineIDInScaleVec++)
+    }
+  }
 
   delete[] dL;
   delete[] dO;
