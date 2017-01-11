@@ -59,26 +59,6 @@ using cv::norm;
 const double PI = M_PI;
 const double TWO_PI = 2 * PI;
 
-// The resolution scale of theta histogram, used when compute angle histogram of lines in the image
-const double ResolutionScale = 10;
-
-/*The following two thresholds are used to decide whether the estimated global rotation is acceptable.
- *Some image pairs don't have a stable global rotation angle, e.g. the image pair of the wide baseline
- *non planar scene. */
-const double AcceptableAngleHistogramDifference = 0.49;
-const double AcceptableLengthVectorDifference = 0.4;
-
-
-/* The following four thresholds are used to decide whether a line in the left and a line in the right
- * are the possible matched line pair. If they are, then their differences should be smaller than these
- * thresholds. */
-const double LengthDifThreshold = 4;
-const double AngleDifferenceThreshold = PI / 4;
-const double DescriptorDifThreshold = 0.35; // 0.35, or 0.5 are good values for LBD
-
-/* The following four threshold are used to decide whether the two possible matched line pair agree with each other.
- * They reflect the similarity of pairwise geometric information. */
-const double RelativeAngleDifferenceThreshold = PI / 4;
 const double IntersectionRationDifThreshold = 1;
 const double ProjectionRationDifThreshold = 1;
 
@@ -101,11 +81,13 @@ double PairwiseLineMatching::GlobalRotationOfImagePair_(ScaleLines &linesInLeft,
   double rotationAngle = 0;
 
   // Step 1: compute the angle histogram of lines in the left and right images
-  unsigned int dim = (unsigned int) (360 / ResolutionScale); //number of the bins of histogram
+  unsigned int dim = (unsigned int) (360 /
+                                     parameters_.globalRotationHistogramResolutionScale); //number of the bins of histogram
   unsigned int index; //index in the histogram
   double direction;
-  double scalar = 180 / (ResolutionScale * PI);//used when compute the index
-  double angleShift = (ResolutionScale * PI) / 360;//make sure zero is the middle of the interval
+  double scalar = 180 / (parameters_.globalRotationHistogramResolutionScale * PI);//used when compute the index
+  double angleShift =
+      (parameters_.globalRotationHistogramResolutionScale * PI) / 360;//make sure zero is the middle of the interval
 
   Mat angleHistLeft = Mat::zeros(1, dim, CV_64F);
   Mat angleHistRight = Mat::zeros(1, dim, CV_64F);
@@ -187,9 +169,10 @@ double PairwiseLineMatching::GlobalRotationOfImagePair_(ScaleLines &linesInLeft,
   }
 
   // First check whether there exist an approximate global rotation angle between image pair
-  if (minDif < AcceptableAngleHistogramDifference && minLenDif < AcceptableLengthVectorDifference)
+  if (minDif < parameters_.globalRotationAcceptableHistogramAngle and
+      minLenDif < parameters_.globalRotationAcceptableLengthDifference)
   {
-    rotationAngle = minShift * ResolutionScale;
+    rotationAngle = minShift * parameters_.globalRotationHistogramResolutionScale;
     if (rotationAngle > 90 && 360 - rotationAngle > 90)
     {
       // In most case we believe the rotation angle between two image pairs should belong to [-Pi/2, Pi/2]
@@ -277,20 +260,21 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
   {
     for (unsigned int j = 0; j < numLineRight; j++)
     {
-      if (desDisMat.at<double>(i, j) > DescriptorDifThreshold)
+      if (desDisMat.at<double>(i, j) > parameters_.descriptorDifferenceThreshold)
       {
         continue; // The descriptor difference is too large.
       }
 
       double lengthDiff = abs(linesInLeft[i][0].lineLength - linesInRight[j][0].lineLength) /
                           MIN(linesInLeft[i][0].lineLength, linesInRight[j][0].lineLength);
-      if (lengthDiff > LengthDifThreshold)
+      if (lengthDiff > parameters_.lengthDifferenceThreshold)
       {
         continue; // The length difference is too large.
       }
 
       double angleDiff = abs(linesInLeft[i][0].direction + globalRotationAngle_ - linesInRight[j][0].direction);
-      if (abs(TWO_PI - angleDiff) > AngleDifferenceThreshold && angleDiff > AngleDifferenceThreshold)
+      if (abs(TWO_PI - angleDiff) > parameters_.angleDifferenceThreshold &&
+          angleDiff > parameters_.angleDifferenceThreshold)
       {
         continue; // The angle difference is too large.
       }
@@ -364,12 +348,12 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
       relativeAngleRight = (relativeAngleRight < PI) ? relativeAngleRight : (relativeAngleRight - TWO_PI);
       relativeAngleRight = (relativeAngleRight > (-PI)) ? relativeAngleRight : (relativeAngleRight + TWO_PI);
       double relativeAngleDif = abs(relativeAngleLeft - relativeAngleRight);
-      if ((TWO_PI - relativeAngleDif) > RelativeAngleDifferenceThreshold and
-          relativeAngleDif > RelativeAngleDifferenceThreshold)
+      if ((TWO_PI - relativeAngleDif) > parameters_.angleDifferenceThreshold and
+          relativeAngleDif > parameters_.angleDifferenceThreshold)
       {
         continue; // The relative angle difference is too large;
       }
-      else if ((TWO_PI - relativeAngleDif) < RelativeAngleDifferenceThreshold)
+      else if ((TWO_PI - relativeAngleDif) < parameters_.angleDifferenceThreshold)
       {
         relativeAngleDif = TWO_PI - relativeAngleDif;
       }
@@ -522,10 +506,10 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
           || (iRatio1R == numeric_limits<double>::infinity()) || (iRatio2R == numeric_limits<double>::infinity()))
       {
         // Don't consider the intersection length ratio
-        similarity = 4 - desDisMat.at<double>(idLeft1, idRight1) / DescriptorDifThreshold
-                     - desDisMat.at<double>(idLeft2, idRight2) / DescriptorDifThreshold
+        similarity = 4 - desDisMat.at<double>(idLeft1, idRight1) / parameters_.descriptorDifferenceThreshold
+                     - desDisMat.at<double>(idLeft2, idRight2) / parameters_.descriptorDifferenceThreshold
                      - pRatioDif / ProjectionRationDifThreshold
-                     - relativeAngleDif / RelativeAngleDifferenceThreshold;
+                     - relativeAngleDif / parameters_.angleDifferenceThreshold;
         adjacenceVec[(2 * dim - j - 1) * j / 2 + i] = similarity;
         nnz++;
       }
@@ -537,10 +521,10 @@ void PairwiseLineMatching::BuildAdjacencyMatrix_(ScaleLines &linesInLeft, ScaleL
           continue;//the intersection length ratio difference is too large;
         }
         //now compute the similarity score between two line pairs.
-        similarity = 5 - desDisMat.at<double>(idLeft1, idRight1) / DescriptorDifThreshold
-                     - desDisMat.at<double>(idLeft2, idRight2) / DescriptorDifThreshold
+        similarity = 5 - desDisMat.at<double>(idLeft1, idRight1) / parameters_.descriptorDifferenceThreshold
+                     - desDisMat.at<double>(idLeft2, idRight2) / parameters_.descriptorDifferenceThreshold
                      - iRatioDif / IntersectionRationDifThreshold - pRatioDif / ProjectionRationDifThreshold
-                     - relativeAngleDif / RelativeAngleDifferenceThreshold;
+                     - relativeAngleDif / parameters_.angleDifferenceThreshold;
         adjacenceVec[(2 * dim - j - 1) * j / 2 + i] = similarity;
         nnz++;
       }
@@ -732,8 +716,8 @@ void PairwiseLineMatching::MatchingResultFromPrincipalEigenvector_(ScaleLines &l
       relativeAngleRight = (relativeAngleRight < PI) ? relativeAngleRight : (relativeAngleRight - TWO_PI);
       relativeAngleRight = (relativeAngleRight > (-PI)) ? relativeAngleRight : (relativeAngleRight + TWO_PI);
       relativeAngleDif = abs(relativeAngleLeft - relativeAngleRight);
-      if ((TWO_PI - relativeAngleDif) > RelativeAngleDifferenceThreshold &&
-          relativeAngleDif > RelativeAngleDifferenceThreshold)
+      if ((TWO_PI - relativeAngleDif) > parameters_.angleDifferenceThreshold &&
+          relativeAngleDif > parameters_.angleDifferenceThreshold)
       {
         principalEigenVectorMAP_.erase(iter++);
         continue; // The relative angle difference is too large;
@@ -820,6 +804,14 @@ PairwiseLineMatching::PlotMatching(std::string path, std::vector<unsigned int> m
   }
 
   imwrite(path, result);
+}
+
+PairwiseLineMatching::PairwiseLineMatching() : PairwiseLineMatching(PairwiseLineMatchingParameters())
+{
+}
+
+PairwiseLineMatching::PairwiseLineMatching(PairwiseLineMatchingParameters parameters) : parameters_(parameters)
+{
 }
 
 } // namespace lbd_descriptor

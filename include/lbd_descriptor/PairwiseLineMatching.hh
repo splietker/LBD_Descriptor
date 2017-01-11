@@ -54,6 +54,62 @@ the use of this software, even if advised of the possibility of such damage.
 namespace lbd_descriptor
 {
 
+struct PairwiseLineMatchingParameters
+{
+  PairwiseLineMatchingParameters() :
+      globalRotationAngleEnabled(true),
+      globalRotationHistogramResolutionScale(10),
+      globalRotationAcceptableHistogramAngle(0.49),
+      globalRotationAcceptableLengthDifference(0.4),
+      descriptorDifferenceThreshold(0.35),
+      lengthDifferenceThreshold(4),
+      angleDifferenceThreshold(M_PI / 4)
+  {}
+
+  /**
+   * Flag determining whether to compute the global rotation angle between image pairs.
+   * Default value is true.
+   */
+  bool globalRotationAngleEnabled;
+
+  /**
+   * The resolution scale of theta histogram, used when compute angle histogram of lines in the image.
+   * Default value is 10.
+   */
+  double globalRotationHistogramResolutionScale;
+
+  /**
+   * Threshold for accepting the histogram's rotation angle. Some image pairs don't have a stable global rotation
+   * angle, e.g. the image pair of the wide baseline non planar scene.
+   * Default value is 0.49.
+   */
+  double globalRotationAcceptableHistogramAngle;
+
+  /**
+   * Threshold for accepting the length vector in the rotation computation.
+   * Default value is 0.4.
+   */
+  double globalRotationAcceptableLengthDifference;
+
+  /**
+   * Maximum difference between descriptors of two lines to be considered as possible matching pair.
+   * Default value is 0.35.
+   */
+  double descriptorDifferenceThreshold;
+
+  /**
+   * Maximum length difference of two lines to be considered as possible matching pair.
+   * Default value is 4.
+   */
+  double lengthDifferenceThreshold;
+
+  /**
+   * Maximum relative angle between two lines to be considered as possible matching pair.
+   * Default value is PI/4.
+   */
+  double angleDifferenceThreshold;
+};
+
 /**
  * Each node in the graph is a possible line matching pair in the left and right image.
  */
@@ -85,8 +141,9 @@ typedef std::multimap<double, unsigned int, CompareS> DISMAP;
 class PairwiseLineMatching
 {
 public:
-  PairwiseLineMatching()
-  {};
+  PairwiseLineMatching();
+
+  PairwiseLineMatching(PairwiseLineMatchingParameters parameters);
 
   void LineMatching(ScaleLines &linesInLeft, ScaleLines &linesInRight,
                     std::vector<unsigned int> &matchResult);
@@ -124,6 +181,11 @@ private:
    */
   void MatchingResultFromPrincipalEigenvector_(ScaleLines &linesInLeft, ScaleLines &linesInRight,
                                                std::vector<unsigned int> &matchResult);
+
+  /**
+   * Parameters for PairwiseLineMatching.
+   */
+  PairwiseLineMatchingParameters parameters_;
 
   /**
    * The approximate global rotation angle between image pairs.
