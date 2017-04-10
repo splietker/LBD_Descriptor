@@ -36,7 +36,7 @@ ADD_LIBRARY(lbddescriptor
     ${LineMatchingLib_HEADER})
 TARGET_LINK_LIBRARIES(lbddescriptor
     ${ARPACKPP_LIBRARIES}
-    opencv_core opencv_imgproc opencv_ximgproc
+    opencv_core opencv_imgproc opencv_ximgproc opencv_line_descriptor
     )
 
 ADD_EXECUTABLE(TestLineMatchingAlgorithm src/TestLineMatchingAlgorithm.cpp)
